@@ -342,6 +342,8 @@ const E = {
   step2:   {title:'aiRA’s response was interrupted', body:'Start a new chat and ask again.', retry:true, detail:'ConnectionError: Step lost its connection twice · Ref 51c8e2a0'},
   stream3: {title:'aiRA couldn’t respond', body:'Start a new chat and ask again.', retry:false, detail:'StreamError: Connection closed before the response finished · Ref 2b90d4e7'},
   step3:   {title:'aiRA couldn’t respond', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Step lost its connection again · Ref 94e1a6c3'},
+  cfg2:    {title:'aiRA couldn’t finish setting this up', body:'Try again in a few minutes.', retry:true, detail:'APIError: Configuration step failed with status 500 · Ref 3fa9c21e'},
+  cfg3:    {title:'aiRA couldn’t finish setting this up', body:'Start a new chat and ask again.', retry:false, detail:'APIError: Configuration step failed again with status 500 · Ref 0b6de4a8'},
   trans:   {title:'aiRA couldn’t get this result', body:'Something interrupted the query. Try again.', retry:true, detail:'ConnectionError: Query stream interrupted · Ref 3e19a0c4'},
   trans2:  {title:'aiRA still couldn’t get this result', body:'Try again in a few minutes.', retry:true, detail:'ConnectionError: Query stream interrupted again · Ref 6a04d9f2'},
   trans3:  {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Query stream interrupted 3 times · Ref d1f8b370'},
@@ -425,7 +427,7 @@ const STEPS = [
    notes:['After the 3rd try the line becomes the card, with no Retry.']},
   {id:'S6.4', s:'S6', name:'Retry fails', kind:null, apply(){ S.items=[u(Q), r({err:E.sandbox2, fb:true})]; }, notes:[]},
 
-  {id:'S7.1', s:'S7', name:'Audience filter fails', kind:'step', apply(){ S.items=[u(CFG), r({line:'stepErr', verb:'Applying your audience filter', errText:'Connection lost while applying your audience filter', okText:CFG_OK})]; },
+  {id:'S7.1', s:'S7', name:'Audience filter fails', kind:'step', apply(){ S.items=[u(CFG), r({line:'stepErr', verb:'Applying your audience filter', errText:'Couldn’t finish setting this up', okText:CFG_OK, e2:E.cfg2, e3:E.cfg3})]; },
    notes:['A platform 500 while applying the filter: a passing step failure.','Compile failures never reach the user.']},
   {id:'S9.1', s:'S9', name:'Opening', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'loading'}; S.failOpen=true; openLater(); }, notes:[]},
   {id:'S9.2', s:'S9', name:'First failure', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err1'}; }, notes:[]},
@@ -609,14 +611,14 @@ function retry(i){
       else { x.err=E.stream3; setStep('S1.6'); } }, 1600);
     return;
   }
-  if (x.line === 'stepErr' || x.err === E.step2){
+  if (x.line === 'stepErr' || x.err === E.step2 || (x.e2 && x.err === x.e2)){
     x.line='stepWork'; x.err=null; x.fb=false; S.gen=true; render();
     later(() => { S.gen=false;
       if (S.retry === 'works'){ x.line=null; x.text=x.okText; x.fb=true; render(); return; }
       x.fails = (x.fails || 0) + 1;
       if (x.fails < 2){ x.line='stepErr'; render(); }
-      else if (x.fails === 2){ x.line=null; x.err=E.step2; x.fb=true; render(); }
-      else { x.line=null; x.err=E.step3; x.fb=true; render(); } }, 1600);
+      else if (x.fails === 2){ x.line=null; x.err=x.e2 || E.step2; x.fb=true; render(); }
+      else { x.line=null; x.err=x.e3 || E.step3; x.fb=true; render(); } }, 1600);
     return;
   }
   if (x.err && x.err.retry){
