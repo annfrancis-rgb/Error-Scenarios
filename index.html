@@ -346,7 +346,8 @@ const E = {
   trans2:  {title:'aiRA still couldn’t get this result', body:'Try again in a few minutes.', retry:true, detail:'ConnectionError: Query stream interrupted again · Ref 6a04d9f2'},
   trans3:  {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Query stream interrupted 3 times · Ref d1f8b370'},
   determ:  {title:'aiRA couldn’t get this result', body:'Try rephrasing your question, or ask about different data.', retry:false, detail:'QueryError: Column not found in the data table · Ref 8d2f61b7'},
-  sandbox: {title:'aiRA couldn’t get this result', body:'Try asking a narrower question, like a shorter date range or fewer tiers.', retry:false, detail:'WorkspaceError: Query workspace restarted 3 times · Ref c47b1e95'},
+  sandbox2: {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'WorkspaceError: Query workspace failed again · Ref 7c3e0b58'},
+  sandbox: {title:'aiRA couldn’t get this result', body:'Try again in a few minutes.', retry:true, detail:'WorkspaceError: Query workspace restarted 3 times · Ref c47b1e95'},
   secrets: {title:'aiRA couldn’t run this test', body:'Add this test’s API credentials to a context document, then run the tests again.', retry:false, detail:null},
 };
 
@@ -420,8 +421,9 @@ const STEPS = [
    notes:['The workspace resets and aiRA retries. The activity line shows the count.','“Next retry” decides whether a retry works.']},
   {id:'S6.2', s:'S6', name:'A retry works', kind:null, apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; },
    notes:['The line went back to the verb, then the answer arrived as normal.']},
-  {id:'S6.3', s:'S6', name:'Every retry fails', kind:null, apply(){ S.items=[u(Q), r({err:E.sandbox, fb:true})]; },
+  {id:'S6.3', s:'S6', name:'Every retry fails', kind:'sandbox', apply(){ S.items=[u(Q), r({err:E.sandbox, fb:true})]; },
    notes:['After the 3rd try the line becomes the card, with no Retry.']},
+  {id:'S6.4', s:'S6', name:'Retry fails', kind:null, apply(){ S.items=[u(Q), r({err:E.sandbox2, fb:true})]; }, notes:[]},
 
   {id:'S7.1', s:'S7', name:'Audience filter fails', kind:'step', apply(){ S.items=[u(CFG), r({line:'stepErr', verb:'Applying your audience filter', errText:'Connection lost while applying your audience filter', okText:CFG_OK})]; },
    notes:['A platform 500 while applying the filter: a passing step failure.','Compile failures never reach the user.']},
@@ -621,6 +623,7 @@ function retry(i){
     const was = x.err;
     x.err=null; x.line='querying'; S.gen=true; render();
     later(() => { S.gen=false; x.line=null; x.fb=true;
+      if (was === E.sandbox){ if (S.retry === 'works'){ x.text=ANS12; x.src=true; setStep('S6.2'); } else { x.err=E.sandbox2; setStep('S6.4'); } return; }
       if (S.retry === 'works'){ x.text=ANS12; x.src=true; setStep('S3.2'); }
       else if (was === E.trans2){ x.err=E.trans3; setStep('S3.4'); }
       else { x.err=E.trans2; setStep('S3.3'); } }, 1800);
