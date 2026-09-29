@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>aiRA Logged Errors</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600&family=Roboto+Mono:wght@400&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+<style>
+/* Light only, to match the product screenshots. */
+:root{
+  color-scheme:light;
+  --aira-bg-canvas:#F6F8FA; --aira-bg-surface:#FFFFFF; --aira-bg-muted:#EEF1F4; --aira-bg-hover:#EEF1F4; --aira-bg-pressed:#E2E6EB;
+  --aira-bg-brand:#3438C9; --aira-bg-brand-subtle:#EEF0FF; --aira-bg-brand-subtle-hover:#E6E9FF;
+  --aira-bg-overlay:rgba(17,24,39,.48); --aira-bg-warning-subtle:#FFF6E0; --aira-bg-table-head:#FBFCFD;
+  --aira-text-primary:#111827; --aira-text-label:#1A2434; --aira-text-secondary:#364152; --aira-text-tertiary:#6B7785;
+  --aira-text-placeholder:#9AA4B2; --aira-text-link:#3438C9; --aira-text-on-brand:#FFFFFF; --aira-text-warning:#8A5500;
+  --aira-text-danger:#D92D2D; --aira-icon-success:#1F7A42;
+  --aira-border-subtle:#EEF1F4; --aira-border-default:#E2E6EB; --aira-border-strong:#C9D0D9; --aira-border-focus:#3438C9; --aira-border-composer:#7C80D4;
+  --aira-btn-primary-bg:#3438C9; --aira-btn-primary-bg-hover:#252AA0; --aira-btn-primary-bg-press:#1B2078;
+  --aira-btn-secondary-bg-hover:#F6F8FA; --aira-btn-secondary-bg-press:#EEF1F4;
+  --aira-shadow-field-focus:0 0 0 3px rgba(52,56,201,.12);
+  --aira-shadow-sm:0 1px 3px rgba(17,24,39,.08),0 1px 2px rgba(17,24,39,.04);
+  --aira-shadow-lg:0 12px 24px -6px rgba(17,24,39,.14),0 4px 8px -4px rgba(17,24,39,.08);
+  --aira-radius-xs:4px; --aira-radius-sm:6px; --aira-radius-md:8px; --aira-radius-lg:12px; --aira-radius-pill:999px;
+  --aira-motion-fast:120ms cubic-bezier(0.4,0,0.2,1);
+  --aira-font-sans:"Roboto",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --aira-font-mono:ui-monospace,"SF Mono","Roboto Mono",Menlo,Consolas,monospace;
+  /* host chrome (Capillary shell, not aiRA tokens) */
+  --host-rail:#222222; --host-rail-active:#404040; --host-rail-icon:#D9D9D9; --host-rail-rule:#4A4A4A; --host-topbar-line:#DFE1E3; --host-avatar:#E0E2E8;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--aira-bg-canvas);color:var(--aira-text-primary);font:400 14px/22px var(--aira-font-sans);-webkit-font-smoothing:antialiased;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer}
+:focus-visible{outline:2px solid var(--aira-border-focus);outline-offset:2px;border-radius:var(--aira-radius-xs)}
+svg.lucide{stroke-width:1.5;flex:none}
+p{margin:0}
+code,.mono{font-family:var(--aira-font-mono);font-size:12px}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+
+/* ---------- app shell ---------- */
+.app{display:flex;height:100%}
+.rail{width:64px;flex:none;background:var(--host-rail);display:flex;flex-direction:column;padding-top:10px}
+.rail .logo{height:44px;display:grid;place-items:center;margin-bottom:10px}
+.rail span.ni{height:40px;display:grid;place-items:center;color:var(--host-rail-icon)}
+.rail span.ni svg{width:20px;height:20px}
+.rail span.on{background:var(--host-rail-active)}
+.rail hr{border:0;border-top:1px solid var(--host-rail-rule);width:20px;margin:10px auto}
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{height:55px;flex:none;background:var(--aira-bg-surface);border-bottom:1px solid var(--host-topbar-line);display:flex;align-items:center;padding:0 16px 0 38px}
+.space{display:flex;align-items:center;gap:6px;font-weight:500;font-size:15px;color:var(--aira-text-label)}
+.space svg{width:16px;height:16px}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:14px}
+.sessions{display:flex;align-items:center;gap:6px;height:32px;padding:0 12px;border:1px solid var(--aira-border-default);border-radius:var(--aira-radius-md);font-weight:500;color:var(--aira-text-label);background:var(--aira-bg-surface)}
+.sessions svg{width:16px;height:16px}
+.vrule{width:1px;height:28px;background:var(--aira-border-default)}
+.avatar{width:32px;height:32px;border-radius:var(--aira-radius-md);background:var(--host-avatar);display:grid;place-items:center;font-weight:500;color:var(--aira-text-label)}
+
+/* offline banner, under the org header */
+.tban{display:flex;align-items:center;gap:10px;background:var(--aira-bg-warning-subtle);border-bottom:1px solid var(--aira-border-default);padding:10px 24px 10px 38px;flex:none;color:var(--aira-text-secondary)}
+.tban svg{width:18px;height:18px;color:var(--aira-text-warning)}
+.tban b{font-weight:500;color:var(--aira-text-warning)}
+
+.body{flex:1;min-height:0;display:flex;position:relative}
+.chat{flex:1;min-width:0;display:flex;flex-direction:column}
+.body:not(.split) .chat{padding-right:316px}
+.body.split .chat{flex:none;width:clamp(380px,32%,480px)}
+.thread{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:var(--aira-border-strong) transparent}
+.col{max-width:792px;margin:0 auto;padding:0 16px}
+.thread .col{padding-top:24px;padding-bottom:24px;display:flex;flex-direction:column;gap:16px}
+.dock{flex:none;padding-bottom:18px}
+
+/* thread content */
+.ub{align-self:flex-end;max-width:80%;background:var(--aira-bg-muted);border-radius:18px;padding:8px 14px;color:var(--aira-text-primary)}
+.reply{display:flex;flex-direction:column;gap:12px}
+.reply:focus{outline:none}
+.ar{color:var(--aira-text-primary)}
+.act{display:flex;gap:10px;align-items:center;color:var(--aira-text-secondary)}
+.sys{font-size:13px;line-height:20px;color:var(--aira-text-tertiary)}
+.tb{font-size:13px;line-height:20px;font-weight:500;color:var(--aira-text-link)}
+.tb:hover{text-decoration:underline}
+.tl{display:flex;align-items:center;gap:6px;font-size:12px;line-height:16px;color:var(--aira-text-tertiary);padding-top:10px;border-top:1px solid var(--aira-border-default)}
+.fbr{display:flex;align-items:center;gap:2px;margin:-4px 0 0 -6px}
+.fbt{font-size:13px;line-height:20px;color:var(--aira-text-tertiary);margin-left:8px}
+.icon-btn{width:28px;height:28px;display:grid;place-items:center;border-radius:var(--aira-radius-sm);color:var(--aira-text-tertiary);transition:background var(--aira-motion-fast),color var(--aira-motion-fast)}
+.icon-btn:hover{background:var(--aira-bg-hover);color:var(--aira-text-secondary)}
+.icon-btn svg{width:18px;height:18px}
+.icon-btn.on{color:var(--aira-text-link)}
+.icon-btn.on svg{fill:currentColor}
+.icon-btn[aria-disabled="true"]{cursor:default;background:none}
+
+/* inline error card */
+.err{background:var(--aira-bg-surface);border:1px solid var(--aira-border-default);border-radius:var(--aira-radius-md);padding:14px 16px;display:flex;flex-direction:column;gap:8px}
+.eh{display:flex;gap:10px;align-items:flex-start}
+.eh > .btn{margin:3px 0 -15px 12px}
+.eh > svg{width:16px;height:16px;color:var(--aira-text-danger);margin-top:2px}
+.et{font-size:14px;line-height:20px;font-weight:500;color:var(--aira-text-primary)}
+.ebd{color:var(--aira-text-tertiary);margin-top:2px;text-wrap:pretty}
+.ef{display:flex;align-items:center;justify-content:space-between;gap:12px;padding-left:26px}
+.vd{display:inline-flex;align-items:center;gap:4px;font-size:13px;line-height:20px;font-weight:500;color:var(--aira-text-tertiary)}
+.vd svg{width:16px;height:16px;transition:transform var(--aira-motion-fast)}
+.vd[aria-expanded="true"] svg{transform:rotate(90deg)}
+.det{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--aira-bg-muted);border-radius:var(--aira-radius-sm);padding:4px 4px 4px 12px;margin-left:26px;min-width:0}
+.det code{font-size:12px;line-height:20px;color:var(--aira-text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.perr .det{margin:4px 0 0;max-width:420px;width:100%}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:32px;padding:0 14px;border-radius:var(--aira-radius-md);font-weight:500;font-size:14px;line-height:20px;white-space:nowrap;transition:background var(--aira-motion-fast)}
+.btn svg{width:16px;height:16px}
+.bp{background:var(--aira-btn-primary-bg);color:var(--aira-text-on-brand)}
+.bp:hover{background:var(--aira-btn-primary-bg-hover)}
+.bp:active{background:var(--aira-btn-primary-bg-press)}
+.bs{background:var(--aira-bg-surface);border:1px solid var(--aira-border-strong);color:var(--aira-text-primary)}
+.bs:hover{background:var(--aira-btn-secondary-bg-hover)}
+.bs:active{background:var(--aira-btn-secondary-bg-press)}
+.sent{display:inline-flex;align-items:center;gap:6px;height:32px;font-weight:500;color:var(--aira-text-secondary)}
+.sent svg{width:16px;height:16px;color:var(--aira-icon-success)}
+
+/* artifact card */
+.artc{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:var(--aira-bg-brand-subtle);border-radius:var(--aira-radius-lg);padding:12px;transition:background var(--aira-motion-fast)}
+.artc:hover{background:var(--aira-bg-brand-subtle-hover)}
+.artc.sel{box-shadow:inset 0 0 0 1px var(--aira-border-focus)}
+.acq{width:44px;height:44px;border-radius:var(--aira-radius-md);background:var(--aira-bg-surface);display:grid;place-items:center;color:var(--aira-text-link)}
+.acq svg{width:20px;height:20px}
+.act_t{font-size:15px;line-height:22px;font-weight:600;color:var(--aira-text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.acs{font-size:12px;line-height:16px;color:var(--aira-text-tertiary)}
+.artc .chev{margin-left:auto;width:18px;height:18px;color:var(--aira-text-tertiary)}
+
+/* composer */
+.composer{display:flex;align-items:center;gap:10px;height:56px;padding:0 10px 0 18px;border:1px solid var(--aira-border-composer);border-radius:var(--aira-radius-pill);background:var(--aira-bg-surface)}
+.composer:focus-within{border-color:var(--aira-border-focus)}
+.composer input{flex:1;min-width:0;border:0;background:transparent;font:inherit;font-size:15px;color:var(--aira-text-primary)}
+.composer input:focus-visible{outline:none}
+.composer input::placeholder{color:var(--aira-text-placeholder)}
+.cicon{color:var(--aira-text-secondary);display:grid;place-items:center;width:28px;height:28px}
+.cicon svg{width:20px;height:20px}
+.send{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;background:var(--aira-bg-muted);color:var(--aira-bg-surface);transition:background var(--aira-motion-fast)}
+.send.ready{background:var(--aira-bg-brand)}
+.send svg{width:18px;height:18px;stroke-width:2}
+.send.stop{background:none;color:var(--aira-text-primary)}
+.send.stop svg{width:26px;height:26px;stroke-width:1.75}
+
+/* session rail (chat only) */
+.sidecar{position:absolute;top:0;right:0;width:316px;padding:14px 16px 0 0;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
+.body.split .sidecar{display:none}
+.side-card{width:280px;background:var(--aira-bg-surface);border:1px solid var(--aira-border-default);border-radius:var(--aira-radius-lg);box-shadow:var(--aira-shadow-sm)}
+.side-sec{padding:14px 14px 12px;border-top:1px solid var(--aira-border-default)}
+.side-sec:first-child{border-top:0}
+.side-sec h5{margin:0 0 4px;display:flex;align-items:center;gap:4px;font-size:14px;font-weight:500;color:var(--aira-text-label)}
+.side-sec h5 svg{width:14px;height:14px;color:var(--aira-text-tertiary)}
+.side-sec .row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:13px;color:var(--aira-text-primary)}
+.side-sec .row svg{width:14px;height:14px;color:var(--aira-text-tertiary)}
+.side-sec .row span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.side-sec .muted{font-size:13px;color:var(--aira-text-tertiary)}
+.side-sec .over{font-size:11px;line-height:16px;letter-spacing:.08em;color:var(--aira-text-tertiary);margin:6px 0 2px}
+
+/* artifact panel */
+.panel[hidden]{display:none}
+.panel{flex:1;min-width:0;display:flex;flex-direction:column;background:var(--aira-bg-surface);border-left:1px solid var(--host-topbar-line)}
+.ph{display:flex;align-items:center;gap:8px;min-height:60px;padding:12px 32px;border-bottom:1px solid var(--aira-border-default)}
+.ph .pt{font-weight:500;color:var(--aira-text-secondary);margin-right:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.iconbtn{width:32px;height:32px;display:inline-grid;place-items:center;border-radius:var(--aira-radius-sm);color:var(--aira-text-secondary);transition:background var(--aira-motion-fast)}
+.iconbtn:hover{background:var(--aira-bg-hover);color:var(--aira-text-primary)}
+.iconbtn svg{width:18px;height:18px;stroke-width:1.75}
+.ph .iconbtn{margin-right:-7px}
+.pb{flex:1;min-height:0;overflow-y:auto;padding:24px 32px;display:flex;flex-direction:column}
+.skel{display:flex;flex-direction:column;gap:14px}
+.skel span{display:block;height:12px;border-radius:6px;background:var(--aira-bg-muted)}
+.skel .box{height:240px;border-radius:var(--aira-radius-lg);margin-top:8px}
+.perr{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding-bottom:40px;text-align:center}
+.eic{width:44px;height:44px;border-radius:50%;background:var(--aira-bg-muted);display:grid;place-items:center;color:var(--aira-text-secondary);margin-bottom:4px}
+.eic svg{width:20px;height:20px}
+.perr .h4{font-size:16px;line-height:24px;font-weight:600;color:var(--aira-text-primary);text-wrap:balance}
+.perr .s{font-size:13px;line-height:20px;color:var(--aira-text-tertiary);max-width:340px;text-wrap:balance}
+.perr .esb{display:flex;gap:8px;margin-top:8px}
+.perr .vd{margin-top:4px;padding-left:20px}
+.dash h3{margin:0;font-size:18px;line-height:26px;font-weight:600}
+.dash .cap{font-size:13px;line-height:20px;color:var(--aira-text-tertiary);margin:2px 0 16px}
+table.dt{width:100%;border-collapse:collapse;border:1px solid var(--aira-border-default);border-radius:var(--aira-radius-md);overflow:hidden;font-size:14px;line-height:20px}
+.dt th{background:var(--aira-bg-table-head);border-bottom:1px solid var(--aira-border-default);font-weight:500;text-align:left;padding:10px 16px}
+.dt td{border-bottom:1px solid var(--aira-border-default);padding:10px 16px;color:var(--aira-text-primary)}
+.dt tr:last-child td{border-bottom:0}
+.dt .n{text-align:right;font-variant-numeric:tabular-nums}
+
+/* report modal */
+.scrim{position:fixed;inset:0;background:var(--aira-bg-overlay);display:grid;place-items:center;z-index:20}
+.rmod{width:min(440px,calc(100% - 32px));background:var(--aira-bg-surface);border-radius:var(--aira-radius-lg);box-shadow:var(--aira-shadow-lg);overflow:hidden}
+.rmh{display:flex;align-items:center;gap:12px;padding:20px 20px 0}
+.rmh h3{flex:1;margin:0;font-size:18px;line-height:26px;font-weight:600;color:var(--aira-text-primary)}
+.rmh .iconbtn{margin:-3px -7px -3px 0}
+.rmb{display:flex;flex-direction:column;gap:16px;padding:12px 20px 20px}
+.rmb p{color:var(--aira-text-secondary);text-wrap:pretty}
+.rmb textarea{display:block;width:100%;min-height:80px;resize:vertical;border:1px solid var(--aira-border-default);border-radius:var(--aira-radius-sm);padding:10px 12px;font:inherit;color:var(--aira-text-primary);background:var(--aira-bg-surface);transition:border-color var(--aira-motion-fast),box-shadow var(--aira-motion-fast)}
+.rmb textarea::placeholder{color:var(--aira-text-placeholder)}
+.rmb textarea:hover{border-color:var(--aira-border-strong)}
+.rmb textarea:focus{outline:none;border-color:var(--aira-border-focus);box-shadow:var(--aira-shadow-field-focus)}
+.rmf{display:flex;justify-content:flex-end;gap:8px;padding:20px;border-top:1px solid var(--aira-border-subtle)}
+
+/* ---------- prototype control (not product) ---------- */
+.proto{position:fixed;left:76px;bottom:12px;z-index:30;width:372px;background:rgba(17,24,39,.9);color:#fff;border-radius:12px;font-size:12px;line-height:16px;box-shadow:0 8px 24px rgba(0,0,0,.2)}
+.proto.min{width:auto}
+.proto button{color:#fff}
+.pr-h{display:flex;align-items:center;gap:8px;padding:8px 8px 8px 12px}
+.pr-h b{font-weight:500;flex:1}
+.pr-h .pr-ib{width:24px;height:24px;display:grid;place-items:center;border-radius:6px}
+.pr-h .pr-ib:hover,.pr-chip:hover,.pr-tab:hover,.pr-btn:hover{background:rgba(255,255,255,.14)}
+.pr-h svg{width:14px;height:14px}
+.pr-b{padding:0 12px 12px;display:flex;flex-direction:column;gap:10px}
+.pr-tabs{display:flex;gap:2px;background:rgba(255,255,255,.08);border-radius:8px;padding:2px}
+.pr-tab{flex:1;padding:5px 4px;white-space:nowrap;border-radius:6px;color:rgba(255,255,255,.72)}
+.pr-tab[aria-selected="true"]{background:rgba(255,255,255,.2);color:#fff}
+.pr-chips{display:flex;flex-wrap:wrap;gap:4px}
+.pr-chip{padding:3px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.24);color:rgba(255,255,255,.8)}
+.pr-chip[aria-current="step"]{background:#fff;color:#111827;border-color:#fff}
+.pr-step{font-size:13px;line-height:18px;font-weight:500}
+.pr-notes{margin:0;padding-left:16px;color:rgba(255,255,255,.82);display:flex;flex-direction:column;gap:2px}
+.pr-row{display:flex;align-items:center;gap:8px;color:rgba(255,255,255,.72)}
+.pr-seg{display:flex;gap:2px;background:rgba(255,255,255,.08);border-radius:999px;padding:2px}
+.pr-seg button{padding:3px 10px;border-radius:999px;color:rgba(255,255,255,.72)}
+.pr-seg button[aria-pressed="true"]{background:rgba(255,255,255,.2);color:#fff}
+.pr-btn{padding:4px 10px;border-radius:999px;border:1px solid rgba(255,255,255,.24)}
+.pr-foot{display:flex;justify-content:space-between;align-items:center}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+.proto{width:440px;max-height:calc(100vh - 24px);overflow-y:auto}
+.proto.min{width:auto}
+.pr-scs{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:4px}
+.pr-sc{display:flex;gap:6px;align-items:baseline;text-align:left;padding:5px 8px;border-radius:6px;color:rgba(255,255,255,.78)}
+.pr-sc span{font-weight:500;color:rgba(255,255,255,.5)}
+.pr-sc:hover{background:rgba(255,255,255,.14)}
+.pr-sc[aria-current="true"]{background:rgba(255,255,255,.2);color:#fff}
+.pr-card{background:rgba(255,255,255,.07);border-radius:8px;padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+.pr-meta{color:rgba(255,255,255,.6)}
+.pr-pat{font-weight:500;color:#fff}
+.pr-cov-h{display:inline-flex;align-items:center;gap:4px;font-weight:500;align-self:flex-start}
+.pr-cov-h svg{width:14px;height:14px}
+.pr-cov{margin-top:-2px}
+.pr-tbc{display:inline-block;margin-left:6px;padding:0 6px;border:1px dashed rgba(255,255,255,.5);border-radius:4px;font-size:11px;font-weight:400}
+.pr-out{border-top:1px solid rgba(255,255,255,.12);padding-top:8px}
+
+
+.pr-top{display:flex;align-items:center;gap:8px;padding:10px 10px 8px 12px}
+.pr-top .pr-ib{width:24px;height:24px;display:grid;place-items:center;border-radius:6px}
+.pr-top .pr-ib:hover{background:rgba(255,255,255,.14)}
+.pr-top .pr-ib svg{width:14px;height:14px}
+.pr-dd{position:relative;flex:1;min-width:0}
+.pr-dd-btn{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 10px;border-radius:8px;background:rgba(255,255,255,.1);font-size:13px;line-height:18px;font-weight:500;text-align:left}
+.pr-dd-btn:hover{background:rgba(255,255,255,.16)}
+.pr-dd-btn svg{width:14px;height:14px;flex:none}
+.pr-dd-list{position:absolute;left:0;right:0;bottom:calc(100% + 4px);margin:0;padding:4px;list-style:none;background:#1F2937;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.3);z-index:2;max-height:360px;overflow-y:auto}
+.pr-dd-list button{width:100%;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;padding:7px 10px;border-radius:6px;font-size:13px;line-height:18px;color:rgba(255,255,255,.85)}
+.pr-dd-list button:hover,.pr-dd-list button:focus-visible{background:rgba(255,255,255,.12)}
+.pr-dd-list button[aria-selected="true"]{color:#fff;font-weight:500}
+.pr-dd-list svg{width:14px;height:14px}
+.pr-lab{font-weight:500;color:#fff}
+.proto{width:380px;overflow:visible;max-height:none}
+</style>
+</head>
+<body>
+<div class="app">
+  <nav class="rail" aria-label="Capillary">
+    <div class="logo" aria-hidden="true"><svg width="28" height="28" viewBox="0 0 28 28"><circle cx="10" cy="11" r="6.5" fill="none" stroke="#F4B400" stroke-width="3"/><circle cx="18" cy="11" r="6.5" fill="none" stroke="#E53935" stroke-width="3"/><circle cx="14" cy="18" r="6.5" fill="none" stroke="#1E88E5" stroke-width="3"/><circle cx="14" cy="14" r="2" fill="#43A047"/></svg></div>
+    <span class="ni" aria-hidden="true"><i data-lucide="house"></i></span>
+    <span class="ni on" aria-hidden="true"><i data-lucide="sparkles"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="tag"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="megaphone"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="columns-2"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="gift"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="users"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="network"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="life-buoy"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="chart-column"></i></span>
+    <hr>
+    <span class="ni" aria-hidden="true"><i data-lucide="file-cog"></i></span>
+    <span class="ni" aria-hidden="true"><i data-lucide="code"></i></span>
+    <hr>
+    <span class="ni" aria-hidden="true"><i data-lucide="settings"></i></span>
+  </nav>
+  <div class="main">
+    <header class="topbar">
+      <div class="space">aiRA Playground <i data-lucide="chevron-down"></i></div>
+      <div class="right">
+        <span class="sessions"><i data-lucide="message-square"></i>Sessions</span>
+        <span class="vrule"></span>
+        <span class="avatar" aria-label="Your account">A</span>
+      </div>
+    </header>
+    <div id="banner"></div>
+    <div class="body" id="body">
+      <section class="chat" aria-label="Chat">
+        <div class="thread" id="thread"><div class="col" id="threadCol" aria-live="polite"></div></div>
+        <div class="dock"><div class="col">
+          <form class="composer" id="composer" autocomplete="off">
+            <span class="cicon" aria-hidden="true"><i data-lucide="plus"></i></span>
+            <input id="input" aria-label="Message aiRA" placeholder="What’s our mission today?">
+            <span class="cicon" aria-hidden="true"><i data-lucide="mic"></i></span>
+            <button type="submit" class="send" id="send" aria-label="Send"><i data-lucide="arrow-up"></i></button>
+          </form>
+        </div></div>
+      </section>
+      <aside class="sidecar" aria-label="Session details">
+        <div class="side-card">
+          <div class="side-sec"><h5>Progress <i data-lucide="chevron-down"></i></h5><div class="muted">No tasks yet</div></div>
+          <div class="side-sec"><h5>Working folder <i data-lucide="chevron-down"></i></h5><div class="row"><i data-lucide="chevron-right"></i><span>.py_shell_cells</span></div></div>
+          <div class="side-sec"><h5>Context <i data-lucide="chevron-down"></i></h5><div class="over">PLAYBOOKS</div><div class="row"><i data-lucide="file-text"></i><span>Points Tables</span></div><div class="over">DOCUMENTS</div><div class="row"><i data-lucide="file-text"></i><span>context/SQL Guideline - Strictly Enforced</span></div></div>
+        </div>
+      </aside>
+      <aside class="panel" id="panel" hidden></aside>
+    </div>
+  </div>
+</div>
+<div id="modal"></div>
+<div class="proto" id="proto" aria-label="Prototype controls"></div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const icons = () => { try { lucide.createIcons({attrs:{'stroke-width':1.5}}); } catch(e){} };
+let sg = 0;
+function spark(){
+  sg++; const g = 'sg'+sg;
+  const st = (cx,cy,r) => `M${cx} ${cy-r}Q${cx+r*.22} ${cy-r*.22} ${cx+r} ${cy}Q${cx+r*.22} ${cy+r*.22} ${cx} ${cy+r}Q${cx-r*.22} ${cy+r*.22} ${cx-r} ${cy}Q${cx-r*.22} ${cy-r*.22} ${cx} ${cy-r}Z`;
+  return `<svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true" style="flex:none"><defs><linearGradient id="${g}" x1="2" y1="12" x2="22" y2="12" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#6268FF"/><stop offset="1" stop-color="#3BA7FF"/></linearGradient></defs><path fill="url(#${g})" d="${st(9,13,8.5)}"/><path fill="url(#${g})" d="${st(19.2,5,4)}"/><path fill="url(#${g})" d="${st(19.2,19.5,3.6)}"/></svg>`;
+}
+
+/* ---------- copy, from Canvas 2 ---------- */
+const TS = 'Sep 29, 2026, 11:24 AM IST';
+const SRC = 'write_db_100783.points_aira';
+const Q = 'Show weekend redemptions by tier for the last 12 months';
+const PART = 'Platinum members redeem on weekends far more than any other tier. Over the last 12 months, 61% of their redemptions fell on a Saturday or Sunday, against';
+const FULL = PART + ' 38% for Gold and 29% for Silver.';
+const ANS12 = 'Over the last 12 months, 61% of Platinum redemptions fell on a weekend, against 38% for Gold and 29% for Silver.';
+const QA = 'Run the test cases for the Diwali weekend 2× points promotion';
+const QA_OK = 'Ran 12 test cases for Diwali weekend 2× points. All 12 passed.';
+const CFG = 'Create a campaign for Gold members who haven’t transacted in 90 days';
+const CFG_OK = 'I’ve built the campaign for 18,240 Gold members who haven’t transacted in 90 days. Review it before it goes for approval.';
+const E = {
+  stream2: {title:'aiRA’s response was interrupted', body:'Start a new chat and ask again.', retry:true, detail:'StreamError: Connection closed before the response finished · Ref 7f3a2c91'},
+  step2:   {title:'aiRA’s response was interrupted', body:'Start a new chat and ask again.', retry:true, detail:'ConnectionError: Step lost its connection twice · Ref 51c8e2a0'},
+  stream3: {title:'aiRA couldn’t respond', body:'Start a new chat and ask again.', retry:false, detail:'StreamError: Connection closed before the response finished · Ref 2b90d4e7'},
+  step3:   {title:'aiRA couldn’t respond', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Step lost its connection again · Ref 94e1a6c3'},
+  trans:   {title:'aiRA couldn’t get this result', body:'Something interrupted the query. Try again.', retry:true, detail:'ConnectionError: Query stream interrupted · Ref 3e19a0c4'},
+  trans2:  {title:'aiRA still couldn’t get this result', body:'Try again in a few minutes.', retry:true, detail:'ConnectionError: Query stream interrupted again · Ref 6a04d9f2'},
+  trans3:  {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Query stream interrupted 3 times · Ref d1f8b370'},
+  determ:  {title:'aiRA couldn’t get this result', body:'Try rephrasing your question, or ask about different data.', retry:false, detail:'QueryError: Column not found in the data table · Ref 8d2f61b7'},
+  sandbox: {title:'aiRA couldn’t get this result', body:'Try asking a narrower question, like a shorter date range or fewer tiers.', retry:false, detail:'WorkspaceError: Query workspace restarted 3 times · Ref c47b1e95'},
+  secrets: {title:'aiRA couldn’t run this test', body:'Add headers or secrets to the context and run the tests again.', retry:false, detail:null},
+};
+
+/* ---------- scenarios and steps ---------- */
+const SCEN = [
+  {id:'S1', name:'Answer generation', share:'18.2% of all errors · 5,627 events', pattern:'Line, then the card after two failed retries',
+   covers:['Model call failing in “Error in tell”: InferenceError, APIError, BadRequestError, ServerDisconnectedError','Tool calls mid-response (ToolError): load_document_range, discover_document_names, grep_document, read_file, edit_file, load_playbook'],
+   note:'Tool names are never shown in the line or the card.'},
+  {id:'S2', name:'QA data-fetch step', share:'2.4% of all errors · 751 events', pattern:'Line, activity form',
+   covers:['fetch_customer_additional_details, fetch_customers_for_testing (491)','main_function: Failed to fetch customer data (114)','No available customers found to run test cases (13): an empty result, not a failure']},
+  {id:'S3', name:'Data result: transient', share:'8.0% of all errors · 2,471 events', pattern:'Card with Retry',
+   covers:['SparkConnectGrpcException','StreamInterruptError','ServerDisconnectedError, while running a query or chart']},
+  {id:'S4', name:'Data result: deterministic', share:'65.0% of all errors · 20,104 events', pattern:'Card, no Retry',
+   covers:['AnalysisException (14,115): column or table not found','ForbiddenOperationError (2,078), ForbiddenDatabaseError (1,045)','SparkExecutionError (1,121)','sqlglot ParseError and TokenError; KeyError, NameError, AssertionError'],
+   note:'Retrying the same query gives the same error, so there is no Retry.'},
+  {id:'S5', name:'Missing auth for a QA test run', share:'0.2% of all errors · 63 events', pattern:'Card, no button',
+   covers:['“No context secrets found for context…”, every time a test suite runs without secrets'],
+   note:'No View details: the sentence already says what to do.'},
+  {id:'S6', name:'Infra or sandbox failures', share:'0.6% of all errors · 187 events', pattern:'Activity line, aiRA’s own retries',
+   covers:['Failed to create child process, resetting sandbox (42)','Unhandled exception in receive_message (71)','Failed to interrupt Spark operations (56): Stop not stopping keeps its own rule'],
+   note:'The line keeps the step’s verb and never names the sandbox.'},
+  {id:'S7', name:'Configuration build step', share:'1.5% of all errors · 452 events', pattern:'Line, activity form, for the audience filter only',
+   covers:['Error applying audience filter: APIError, code 500 (133)','config_execute compile failed (145) and load_config failed (47): fixed upstream, never shown'],
+   note:'aiRA compiles and fixes its own script before presenting. A compile failure reaching the user means that loop stopped early.'},
+];
+SCEN.push({id:'S9', name:'Artifact preview: hiccup', covers:['Network or render hiccups while opening an artifact, about 34% of artifact load failures','Load artifact (45), Show file (295), View image (148), View PDF (68), View PPT (37), Load app (51)']});
+SCEN.push({id:'S10', name:'Artifact preview: broken file', covers:['Corrupted or malformed content and wrong text encoding, about 60% of artifact load failures','Reports, PDFs, dashboards and exports that fail to render']});
+const OUTSIDE = ['FTP export failures (16): fired from a table’s export control, not a chat reply','Feature not enabled for the org (8): an entitlement gate, caught before aiRA tries'];
+
+const u = text => ({t:'user', text});
+const r = o => Object.assign({t:'reply', text:'', line:null, err:null, src:false, fb:false, reported:false}, o);
+const STEPS = [
+  {id:'S1.1', s:'S1', name:'First failure: the line', kind:'stream', apply(){ S.items=[u(Q), r({text:PART, line:'int', fb:true})]; },
+   notes:['The model or a tool failed mid-answer. The text so far stays.','Retry is the only action. Set “Next retry” to see it work or fail.']},
+  {id:'S1.2', s:'S1', name:'No text yet', kind:'stream', apply(){ S.items=[u(Q), r({line:'int', fb:true})]; },
+   notes:['It failed before any text arrived. The same line sits where the reply would be.']},
+  {id:'S1.3', s:'S1', name:'Retry works', kind:'stream', apply(){ S.items=[u(Q), r({text:FULL, src:true, fb:true})]; },
+   notes:['The answer runs again in the same place, and the line goes.']},
+  {id:'S1.4', s:'S1', name:'First retry fails: the line again', kind:'stream', apply(){ S.items=[u(Q), r({text:PART, line:'int', fb:true, fails:1})]; },
+   notes:['The same line, with the same copy and Retry.','The brief “Answering” state between tries shows Retry did something.']},
+  {id:'S1.5', s:'S1', name:'Second retry fails: the card', kind:'stream', apply(){ S.items=[u(Q), r({text:PART, err:E.stream2, fb:true, fails:2})]; },
+   notes:['After two failed retries the line becomes the card.','The card keeps Retry, because trying again can still work.']},
+  {id:'S1.6', s:'S1', name:'Card retry fails: no Retry', kind:null, apply(){ S.items=[u(Q), r({text:PART, err:E.stream3, fb:true, fails:3})]; },
+   notes:['The card’s own Retry failed, so this card has no button.','“aiRA couldn’t respond” marks the end. The composer is the way forward.']},
+
+  {id:'S2.1', s:'S2', name:'Step loses its connection', kind:'step', apply(){ qaStart(); },
+   notes:['The activity line changes in place to the red alert with Retry.','Waits about 2 seconds, then fails.']},
+  {id:'S2.2', s:'S2', name:'Failed: the line', kind:'step', apply(){ S.items=[u(QA), r({line:'stepErr', verb:'Fetching your test customers', errText:'Connection lost while fetching your test customers', okText:QA_OK})]; },
+   notes:['Retry runs the step again.','After two failed retries the line becomes the card, with Retry. If that fails too: “aiRA couldn’t respond”, no button.']},
+  {id:'S2.3', s:'S2', name:'No customers match', kind:null, tbc:true, apply(){ S.items=[u(QA), r({text:'No customers match this test’s criteria, so the tests didn’t run. Change the customer list and run the tests again.', fb:true})]; },
+   notes:['To be confirmed.','Not an error: an empty result. A plain reply, using the “nothing matched” pattern.']},
+
+  {id:'S3.1', s:'S3', name:'First failure', kind:'query', apply(){ S.items=[u(Q), r({err:E.trans})]; },
+   notes:['A connection blip during the query. Retry can work.']},
+  {id:'S3.2', s:'S3', name:'Retry works', kind:'query', apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; },
+   notes:['The answer takes the card’s place.']},
+  {id:'S3.3', s:'S3', name:'Second failure', kind:'query', apply(){ S.items=[u(Q), r({err:E.trans2, fb:true})]; },
+   notes:['A connection blip, so Retry stays.']},
+  {id:'S3.4', s:'S3', name:'Third failure: no Retry', kind:null, apply(){ S.items=[u(Q), r({err:E.trans3, fb:true})]; },
+   notes:['Retry has failed twice, so this card has no button.']},
+
+  {id:'S4.1', s:'S4', name:'The card, no Retry', kind:null, apply(){ S.items=[u(Q), r({err:E.determ, fb:true})]; },
+   notes:['The same query would fail the same way, so there is no Retry.','The sentence points at the question, not the query.']},
+  {id:'S4.2', s:'S4', name:'User asks differently', kind:null, apply(){ S.items=[u(Q), r({err:E.determ, fb:true})]; S.draft='Show weekend redemptions by tier for the last 3 months'; S.focusInput=true; },
+   notes:['Following the sentence, the user types a narrower question. Press Send.']},
+
+  {id:'S5.1', s:'S5', name:'The card, no button', kind:null, apply(){ S.items=[u(QA), r({err:E.secrets, fb:true})]; },
+   notes:['Retry could never fix it, so there’s no button.','No View details: the sentence already says what to do.']},
+
+  {id:'S6.1', s:'S6', name:'aiRA retries on its own', kind:'sandbox', apply(){ sandboxStart(); },
+   notes:['The workspace resets and aiRA retries. The activity line shows the count.','“Next retry” decides whether a retry works.']},
+  {id:'S6.2', s:'S6', name:'A retry works', kind:null, apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; },
+   notes:['The line went back to the verb, then the answer arrived as normal.']},
+  {id:'S6.3', s:'S6', name:'Every retry fails', kind:null, apply(){ S.items=[u(Q), r({err:E.sandbox, fb:true})]; },
+   notes:['After the 3rd try the line becomes the card, with no Retry.']},
+
+  {id:'S7.1', s:'S7', name:'Audience filter fails', kind:'step', apply(){ S.items=[u(CFG), r({line:'stepErr', verb:'Applying your audience filter', errText:'Connection lost while applying your audience filter', okText:CFG_OK})]; },
+   notes:['A platform 500 while applying the filter: a passing step failure.','Compile failures never reach the user.']},
+  {id:'S9.1', s:'S9', name:'Opening', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'loading'}; S.failOpen=true; openLater(); }, notes:[]},
+  {id:'S9.2', s:'S9', name:'First failure', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err1'}; }, notes:[]},
+  {id:'S9.3', s:'S9', name:'Retry works', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'ok'}; }, notes:[]},
+  {id:'S9.4', s:'S9', name:'Second failure', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err2'}; }, notes:[]},
+  {id:'S10.1', s:'S10', name:'Caught while building', kind:null, apply(){ buildStart(); }, notes:[]},
+  {id:'S10.2', s:'S10', name:'Opens as normal', kind:null, apply(){ S.items=[u('Build a dashboard of weekend redemptions by tier'), r({line:'done', act:'Checked the dashboard'}), {t:'art', title:'Weekend redemptions by tier', sub:'v1'}, r({text:'Here’s your dashboard: weekend redemptions for Gold, Silver and Platinum over the last 12 weeks.', fb:true})]; S.panel={key:2, title:'Weekend redemptions by tier', state:'ok'}; }, notes:[]},
+  {id:'S10.3', s:'S10', name:'Gets through', kind:null, apply(){ dash(); S.items[1].broken=true; }, notes:[]},
+  {id:'S10.4', s:'S10', name:'Broken file: no Retry', kind:null, apply(){ dash(); S.items[1].broken=true; S.panel={key:1, title:'Weekend redemptions by tier', state:'broken'}; }, notes:[]},
+
+];
+const STEP = id => STEPS.find(s => s.id === id);
+
+/* ---------- state ---------- */
+let S, timers = [];
+const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
+function fresh(){ return {step:'S1.1', items:[], gen:false, draft:'', focusInput:false, retry:'fails', min:false, open:{}, covers:true, dd:false, panel:null, modal:false, failOpen:false}; }
+function go(id){
+  const st = STEP(id) || STEPS[0];
+  timers.forEach(clearTimeout); timers = [];
+  const keep = S; S = fresh(); S.step = st.id;
+  if (keep){ S.retry = keep.retry; S.min = keep.min; S.covers = keep.covers; }
+  st.apply();
+  if (location.hash !== '#'+st.id) history.replaceState(null, '', '#'+st.id);
+  render();
+}
+function setStep(id){ S.step = id; if (location.hash !== '#'+id) history.replaceState(null, '', '#'+id); render(); }
+
+function qaStart(){
+  S.items=[u(QA), r({line:'stepWork', verb:'Fetching your test customers', errText:'Connection lost while fetching your test customers', okText:QA_OK})]; S.gen=true;
+  later(() => { const x=S.items[1]; x.line='stepErr'; S.gen=false; setStep('S2.2'); }, 2200);
+}
+function sandboxStart(){
+  S.items=[u(Q), r({line:'act', act:'Querying your data'})]; S.gen=true;
+  let n = 0;
+  const tick = () => {
+    const x = S.items[1];
+    if (n === 0 || S.retry === 'fails'){
+      n++;
+      if (n > 3){ x.line=null; x.err=E.sandbox; x.fb=true; S.gen=false; setStep('S6.3'); return; }
+      x.act = `Querying your data · Retrying (${n} of 3)`; render();
+      later(tick, 1500);
+    } else {
+      x.act = 'Querying your data'; render();
+      later(() => { x.line=null; x.text=ANS12; x.src=true; x.fb=true; S.gen=false; setStep('S6.2'); }, 1200);
+    }
+  };
+  later(tick, 1200);
+}
+function bgStart(){
+  S.items=[u(Q), r({line:'act', act:'Querying your data'})]; S.gen=true;
+  later(() => { const x=S.items[1]; x.line=null; x.text=ANS12; x.src=true; x.fb=true; S.gen=false; render(); }, 2000);
+}
+
+/* ---------- render ---------- */
+function detBox(text, key){
+  const done = S.copied === String(key);
+  return `<div class="det"><code>${esc(text)}</code><button class="icon-btn" data-copy="${key}" aria-label="${done ? 'Copied' : 'Copy details'}"><i data-lucide="${done ? 'check' : 'copy'}"></i></button></div>`;
+}
+function replyHTML(x, i){
+  let h = `<div class="reply" data-reply="${i}" tabindex="-1">`;
+  if (x.text) h += `<p class="ar">${esc(x.text)}</p>`;
+  if (x.line === 'act') h += `<div class="act" role="status">${spark()}<span>${esc(x.act)}</span></div>`;
+  if (x.line === 'done') h += `<div class="act" role="status" style="color:var(--aira-text-tertiary)">${spark()}<span>${esc(x.act)}</span></div>`;
+  if (x.line === 'creating') h += `<div class="act" role="status">${spark()}<span>Creating the dashboard</span></div>`;
+  if (x.line === 'working') h += `<div class="act" role="status">${spark()}<span>Answering</span></div>`;
+  if (x.line === 'querying') h += `<div class="act" role="status">${spark()}<span>Querying your data</span></div>`;
+  if (x.line === 'stepWork') h += `<div class="act" role="status">${spark()}<span>${esc(x.verb)}</span></div>`;
+  if (x.line === 'stepErr') h += `<div class="act" role="status"><i data-lucide="circle-alert" style="color:var(--aira-text-danger);width:16px;height:16px"></i><span>${esc(x.errText)} · <button class="tb" style="font-size:14px" data-retry="${i}">Retry</button></span></div>`;
+  if (x.line === 'int') h += `<p class="sys" role="status">aiRA’s response was interrupted · <button class="tb" data-retry="${i}">Retry</button></p>`;
+  if (x.err){
+    const open = !!S.open[i];
+    h += `<div class="err" role="alert"><div class="eh"><i data-lucide="circle-alert"></i><div style="flex:1"><p class="et">${esc(x.err.title)}</p><p class="ebd">${esc(x.err.body)}</p></div>${x.err.retry ? `<button class="btn bs" data-retry="${i}">Retry</button>` : ''}</div>`
+      + (x.err.detail ? `<div class="ef"><button class="vd" data-details="${i}" aria-expanded="${open}">View details<i data-lucide="chevron-right"></i></button></div>` + (open ? detBox(x.err.detail, i) : '') : '')
+      + `</div>`;
+  }
+  if (x.src) h += `<div class="tl">Source: <code>${SRC}</code></div>`;
+  if (x.fb){
+    h += `<div class="fbr"><button class="icon-btn${x.up?' on':''}" aria-label="Helpful" aria-pressed="${!!x.up}" data-thumb="up" data-i="${i}"><i data-lucide="thumbs-up"></i></button>`
+      + `<button class="icon-btn${x.down?' on':''}" aria-label="Not helpful" aria-pressed="${!!x.down}" data-thumb="down" data-i="${i}"><i data-lucide="thumbs-down"></i></button><span class="icon-btn" aria-hidden="true" style="cursor:default"><i data-lucide="message-square-warning"></i></span><span class="fbt">${TS}</span></div>`;
+  }
+  return h + `</div>`;
+}
+const ENTRIES = [
+  {label:'Errors during answer generation', go:'S1.1', s:'S1'},
+  {label:'Errors during answer generation: no text yet', go:'S1.2', s:'S1', only:['S1.2']},
+  {label:'Errors during QA data fetch', go:'S2.1', s:'S2'},
+  {label:'Errors during QA data fetch: no customers match', go:'S2.3', s:'S2', only:['S2.3']},
+  {label:'Errors during a data query: transient', go:'S3.1', s:'S3'},
+  {label:'Errors during a data query: deterministic', go:'S4.1', s:'S4'},
+  {label:'Errors during a QA test run: missing auth', go:'S5.1', s:'S5'},
+  {label:'Errors during sandbox runs', go:'S6.1', s:'S6'},
+  {label:'Errors during configuration build', go:'S7.1', s:'S7'},
+  {label:'Errors during artifact preview: hiccup', go:'S9.1', s:'S9'},
+  {label:'Errors during artifact preview: broken file caught while building', go:'S10.1', s:'S10', only:['S10.1','S10.2']},
+  {label:'Errors during artifact preview: broken file gets through', go:'S10.3', s:'S10', only:['S10.3','S10.4']},
+];
+function entryOf(stepId){
+  const st = STEP(stepId);
+  return ENTRIES.find(e => e.only && e.only.includes(stepId)) || ENTRIES.find(e => e.s === st.s && !e.only);
+}
+function protoHTML(){
+  const st = STEP(S.step), sc = SCEN.find(x => x.id === st.s), en = entryOf(S.step);
+  if (S.min) return `<div class="pr-h"><b>${esc(en.label)}</b><button class="pr-ib" data-pr="expand" aria-label="Show controls"><i data-lucide="chevron-up"></i></button></div>`;
+  const hasRetry = ['stream','step','query','sandbox','panel'].includes(st.kind);
+  const list = S.dd ? `<ul class="pr-dd-list" role="listbox" aria-label="Scenario">${ENTRIES.map((e,k) => `<li><button role="option" data-entry="${k}" aria-selected="${e===en}">${esc(e.label)}${e===en ? '<i data-lucide="check"></i>' : ''}</button></li>`).join('')}</ul>` : '';
+  return `<div class="pr-top"><div class="pr-dd"><button class="pr-dd-btn" data-pr="dd" aria-haspopup="listbox" aria-expanded="${!!S.dd}"><span>${esc(en.label)}</span><i data-lucide="chevron-down"></i></button>${list}</div><button class="pr-ib" data-pr="min" aria-label="Hide controls"><i data-lucide="minus"></i></button></div>
+  <div class="pr-b">
+    <div class="pr-card"><p class="pr-lab">Covers</p><ul class="pr-notes pr-cov">${sc.covers.map(c => `<li>${esc(c)}</li>`).join('')}</ul></div>
+    <div class="pr-foot">${hasRetry ? `<div class="pr-row">Next retry <div class="pr-seg"><button data-retrymode="fails" aria-pressed="${S.retry==='fails'}">Fails</button><button data-retrymode="works" aria-pressed="${S.retry==='works'}">Works</button></div></div>` : '<span></span>'}<button class="pr-btn" data-pr="restart">Restart</button></div>
+  </div>`;
+}
+function buildStart(){
+  S.items=[u('Build a dashboard of weekend redemptions by tier'), r({line:'act', act:'Checking the dashboard'})]; S.gen=true;
+  later(() => { S.items[1].act='Couldn’t render the dashboard · Fixing it (1 of 3)'; render(); }, 1400);
+  later(() => { S.items[1].line='done'; S.items[1].act='Checked the dashboard'; render(); }, 3200);
+  later(() => { S.gen=false; S.items.push({t:'art', title:'Weekend redemptions by tier', sub:'v1'}); S.items.push(r({text:'Here’s your dashboard: weekend redemptions for Gold, Silver and Platinum over the last 12 weeks.', fb:true})); render(); }, 4000);
+}
+function dash(){ S.items=[u('Build a dashboard of weekend redemptions by tier'), {t:'art', title:'Weekend redemptions by tier', sub:'v1'}, r({text:'Here’s your dashboard: weekend redemptions for Gold, Silver and Platinum over the last 12 weeks.', fb:true})]; }
+function openLater(){
+  later(() => { if (!S.panel) return;
+    if (S.failOpen || S.retry === 'fails'){ S.failOpen=false; S.panel.state='err1'; setStep('S9.2'); }
+    else { S.panel.state='ok'; setStep('S9.3'); } }, 1800);
+}
+function perr(icon, h, sub, btns, detail){
+  const open = !!S.open.panel;
+  return `<div class="perr" role="alert"><div class="eic"><i data-lucide="${icon}"></i></div><p class="h4">${h}</p><p class="s">${sub}</p><div class="esb">${btns}</div>`
+    + (detail ? `<button class="vd" data-details="panel" aria-expanded="${open}">View details<i data-lucide="chevron-right"></i></button>${open ? detBox(detail, 'panel') : ''}` : '') + `</div>`;
+}
+function panelHTML(p){
+  let b = '';
+  if (p.state === 'loading') b = `<div class="skel" aria-label="Loading"><span style="width:46%;height:22px"></span><span style="width:62%"></span><span style="width:92%"></span><span style="width:84%"></span><span style="width:40%"></span><span style="width:96%"></span><span style="width:88%"></span><span class="box"></span></div>`;
+  if (p.state === 'err1') b = perr('circle-alert', 'This artifact couldn’t open', 'Try again in a moment.', `<button class="btn bs" data-pclose>Close</button><button class="btn bp" data-pretry>Retry</button>`, 'LoadError: Artifact could not be loaded · Ref c2d94a17');
+  if (p.state === 'err2') b = perr('circle-alert', 'This artifact still couldn’t open', 'Ask aiRA in the chat to create it again.',
+      `<button class="btn bs" data-pclose>Close</button>`, 'LoadError: Artifact could not be loaded · Ref e81b3f60');
+  if (p.state === 'broken') b = perr('circle-alert', 'This artifact couldn’t open', 'Ask aiRA in the chat to create it again.', `<button class="btn bs" data-pclose>Close</button>`, 'RenderError: File content could not be read · Ref 5e27c0a9');
+  if (p.state === 'ok') b = `<div class="dash"><h3>Weekend redemptions by tier</h3><p class="cap">Last 12 weeks · Source: <code>${SRC}</code></p>
+      <table class="dt"><thead><tr><th>Tier</th><th class="n">Weekend redemptions</th><th class="n">Share on weekends</th></tr></thead>
+      <tbody><tr><td>Platinum</td><td class="n">18,420</td><td class="n">61%</td></tr><tr><td>Gold</td><td class="n">24,960</td><td class="n">38%</td></tr><tr><td>Silver</td><td class="n">31,275</td><td class="n">29%</td></tr></tbody></table></div>`;
+  return `<div class="ph"><span class="pt">${esc(p.title)}</span><button class="iconbtn" aria-label="Close" data-pclose><i data-lucide="x"></i></button></div><div class="pb">${b}</div>`;
+}
+function render(){
+  $('#threadCol').innerHTML = S.items.map((x, i) => {
+    if (x.t === 'user') return `<div class="ub">${esc(x.text)}</div>`;
+    if (x.t === 'art') return `<button class="artc${S.panel && S.panel.key===i ? ' sel' : ''}" data-card="${i}"><span class="acq"><i data-lucide="file-text"></i></span><span style="min-width:0"><span class="act_t" style="display:block">${esc(x.title)}</span><span class="acs">${esc(x.sub)}</span></span><i data-lucide="chevron-right" class="chev"></i></button>`;
+    return replyHTML(x, i);
+  }).join('');
+  $('#banner').innerHTML = '';
+  $('#body').classList.toggle('split', !!S.panel); $('#panel').hidden = !S.panel; $('#panel').innerHTML = S.panel ? panelHTML(S.panel) : '';
+  const send = $('#send'), input = $('#input');
+  send.classList.toggle('stop', S.gen);
+  send.setAttribute('aria-label', S.gen ? 'Stop' : 'Send');
+  send.innerHTML = S.gen ? '<i data-lucide="circle-stop"></i>' : '<i data-lucide="arrow-up"></i>';
+  if (S.draft){ input.value = S.draft; S.draft = ''; }
+  send.classList.toggle('ready', !S.gen && !!input.value.trim());
+  $('#modal').innerHTML = S.modal ? `<div class="scrim" data-scrim><div class="rmod" role="dialog" aria-modal="true" aria-labelledby="rmt">
+      <div class="rmh"><h3 id="rmt">Report this problem</h3><button class="iconbtn" aria-label="Close" data-mclose><i data-lucide="x"></i></button></div>
+      <div class="rmb"><p>The details of what went wrong are sent with your report.</p><textarea id="rnote" aria-label="Note (optional)" placeholder="What were you trying to do? (optional)"></textarea></div>
+      <div class="rmf"><button class="btn bs" data-mclose>Cancel</button><button class="btn bp" data-msend>Send report</button></div></div></div>` : '';
+  $('#proto').className = 'proto' + (S.min ? ' min' : '');
+  $('#proto').innerHTML = protoHTML();
+  icons();
+  if (S.modal){ const t = $('#rnote'); if (t) t.focus(); }
+  else if (S.focusInput){ S.focusInput = false; input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
+  else if (S.focusSel){ const el = document.querySelector(S.focusSel); S.focusSel = null; if (el) el.focus({preventScroll:true}); }
+}
+
+/* ---------- behaviour ---------- */
+function retry(i){
+  const x = S.items[i], st = STEP(S.step);
+  S.focusSel = `[data-reply="${i}"]`;
+  if (x.line === 'int' || (x.err === E.stream2)){
+    const hadText = !!x.text || x.hadText;
+    x.hadText = hadText; x.text=''; x.line='working'; x.err=null; x.fb=false; S.gen=true; render();
+    later(() => { S.gen=false; x.line=null; x.fb=true;
+      if (S.retry === 'works'){ x.text=FULL; x.src=true; setStep('S1.3'); return; }
+      x.text = hadText ? PART : '';
+      x.fails = (x.fails || 0) + 1;
+      if (x.fails < 2){ x.line='int'; setStep('S1.4'); }
+      else if (x.fails === 2){ x.err=E.stream2; setStep('S1.5'); }
+      else { x.err=E.stream3; setStep('S1.6'); } }, 1600);
+    return;
+  }
+  if (x.line === 'stepErr' || x.err === E.step2){
+    x.line='stepWork'; x.err=null; x.fb=false; S.gen=true; render();
+    later(() => { S.gen=false;
+      if (S.retry === 'works'){ x.line=null; x.text=x.okText; x.fb=true; render(); return; }
+      x.fails = (x.fails || 0) + 1;
+      if (x.fails < 2){ x.line='stepErr'; render(); }
+      else if (x.fails === 2){ x.line=null; x.err=E.step2; x.fb=true; render(); }
+      else { x.line=null; x.err=E.step3; x.fb=true; render(); } }, 1600);
+    return;
+  }
+  if (x.err && x.err.retry){
+    const was = x.err;
+    x.err=null; x.line='querying'; S.gen=true; render();
+    later(() => { S.gen=false; x.line=null; x.fb=true;
+      if (S.retry === 'works'){ x.text=ANS12; x.src=true; setStep('S3.2'); }
+      else if (was === E.trans2){ x.err=E.trans3; setStep('S3.4'); }
+      else { x.err=E.trans2; setStep('S3.3'); } }, 1800);
+  }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && S.modal){ S.modal=false; S.focusSel='[data-preport]'; render(); return; } if (e.key === 'Escape' && S.dd){ S.dd = false; S.focusSel = '[data-pr="dd"]'; render(); } });
+document.addEventListener('click', e => {
+  if (S.dd && !e.target.closest('.pr-dd')){ S.dd = false; render(); }
+  if (S.modal && e.target.matches('[data-scrim]')){ S.modal=false; S.focusSel='[data-preport]'; return render(); }
+  const t = e.target.closest('button'); if (!t) return;
+  const d = t.dataset;
+  if (d.go) return go(d.go);
+  if (d.scen) return go(STEPS.find(s => s.s === d.scen).id);
+  if (d.retrymode){ S.retry = d.retrymode; return render(); }
+  if (d.pr === 'min'){ S.min = true; return render(); }
+  if (d.pr === 'expand'){ S.min = false; return render(); }
+  if (d.pr === 'covers'){ S.covers = !S.covers; return render(); }
+  if (d.pr === 'restart') return go(entryOf(S.step).go);
+  if (d.pr === 'dd'){ S.dd = !S.dd; S.focusSel = S.dd ? '[data-entry][aria-selected="true"]' : '[data-pr="dd"]'; return render(); }
+  if (d.entry !== undefined){ S.dd = false; go(ENTRIES[+d.entry].go); const b = document.querySelector('[data-pr="dd"]'); if (b) b.focus(); return; }
+  if (d.retry !== undefined) return retry(+d.retry);
+  if (d.pretry !== undefined){ S.panel.state='loading'; S.open.panel=false; render();
+    later(() => { if (!S.panel) return; if (S.retry === 'works'){ S.panel.state='ok'; setStep('S9.3'); } else { S.panel.state='err2'; setStep('S9.4'); } }, 1800); return; }
+  if (d.pclose !== undefined){ timers.forEach(clearTimeout); timers=[]; S.panel=null; S.open.panel=false; S.focusSel='[data-card]'; return render(); }
+  if (d.preport !== undefined){ S.modal=true; return render(); }
+  if (d.mclose !== undefined){ S.modal=false; S.focusSel='[data-preport]'; return render(); }
+  if (d.msend !== undefined){ S.modal=false; if (S.panel) S.panel.reported=true; S.focusSel='[data-pclose]'; return render(); }
+  if (d.card !== undefined){
+    const k = +d.card, art = S.items[k];
+    if (S.panel && S.panel.key === k) return;
+    timers.forEach(clearTimeout); timers=[];
+    S.panel={key:k, title:art.title, state:'loading'}; S.open.panel=false; render();
+    if (art.broken){ later(() => { if (!S.panel) return; S.panel.state='broken'; setStep('S10.4'); }, 1400); return; }
+    if (STEP(S.step).s === 'S10'){ later(() => { if (!S.panel) return; S.panel.state='ok'; if (S.step === 'S10.1') setStep('S10.2'); else render(); }, 1400); return; }
+    openLater(); return;
+  }
+  if (d.details !== undefined){ S.open[d.details] = !S.open[d.details]; S.focusSel = `[data-details="${d.details}"]`; return render(); }
+  if (d.copy !== undefined){
+    const txt = t.parentElement.querySelector('code').textContent;
+    try { navigator.clipboard && navigator.clipboard.writeText(txt); } catch(err){}
+    S.copied = d.copy; S.focusSel = `[data-copy="${d.copy}"]`; render();
+    later(() => { if (S.copied === d.copy){ S.copied = null; S.focusSel = `[data-copy="${d.copy}"]`; render(); } }, 1500);
+    return;
+  }
+  if (d.thumb){ const x = S.items[+d.i]; const k = d.thumb; const was = x[k]; x.up = x.down = false; x[k] = !was; S.focusSel = `[data-thumb="${k}"][data-i="${d.i}"]`; return render(); }
+});
+const input = $('#input');
+input.addEventListener('input', () => $('#send').classList.toggle('ready', !S.gen && !!input.value.trim()));
+$('#composer').addEventListener('submit', e => {
+  e.preventDefault();
+  if (S.gen){
+    timers.forEach(clearTimeout); timers = []; S.gen = false;
+    S.items.forEach(x => { if (x.t === 'reply' && x.line && x.line !== 'int' && x.line !== 'stepErr'){ x.line = null; x.fb = true; } });
+    return render();
+  }
+  const text = input.value.trim(); if (!text) return;
+  input.value = ''; S.items.push(u(text));
+  if (STEP(S.step).s === 'S10'){
+    S.panel = null;
+    const x = r({line:'creating'}); S.items.push(x); S.gen = true; render();
+    later(() => { S.gen=false; x.line=null;
+      S.items.splice(S.items.indexOf(x), 0, {t:'art', title:'Weekend redemptions by tier', sub:'v2'});
+      x.text='Here’s the dashboard again: weekend redemptions for Gold, Silver and Platinum over the last 12 weeks.'; x.fb=true; render(); }, 2000);
+    return;
+  }
+  const x = r({line:'querying'}); S.items.push(x); S.gen = true; render();
+  later(() => { S.gen=false; x.line=null; x.fb=true; x.src=true;
+    x.text = /3 months/i.test(text) ? 'Over the last 3 months, 64% of Platinum redemptions fell on a weekend, against 40% for Gold and 31% for Silver.' : ANS12;
+    render(); }, 1800);
+});
+window.addEventListener('hashchange', () => { const id = decodeURIComponent(location.hash.slice(1)); if (STEP(id) && id !== S.step) go(id); });
+S = null;
+const start = decodeURIComponent(location.hash.slice(1));
+go(STEP(start) ? start : 'S1.1');
+})();
+</script>
+</body>
+</html>
