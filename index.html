@@ -338,10 +338,11 @@ const QA_OK = 'Ran 12 test cases for Diwali weekend 2× points. All 12 passed.';
 const CFG = 'Create a campaign for Gold members who haven’t transacted in 90 days';
 const CFG_OK = 'I’ve built the campaign for 18,240 Gold members who haven’t transacted in 90 days. Review it before it goes for approval.';
 const E = {
-  stream2: {title:'aiRA’s response was interrupted', body:'Start a new chat and ask again.', retry:true, detail:'StreamError: Connection closed before the response finished · Ref 7f3a2c91'},
-  step2:   {title:'aiRA’s response was interrupted', body:'Start a new chat and ask again.', retry:true, detail:'ConnectionError: Step lost its connection twice · Ref 51c8e2a0'},
+  stream2: {title:'aiRA’s response was interrupted', body:'Try again in a few minutes.', retry:true, detail:'StreamError: Connection closed before the response finished · Ref 7f3a2c91'},
+  step2:   {title:'aiRA couldn’t finish this step', body:'Try again in a few minutes.', retry:true, detail:'ToolError: Step failed twice · Ref 51c8e2a0'},
   stream3: {title:'aiRA couldn’t respond', body:'Start a new chat and ask again.', retry:false, detail:'StreamError: Connection closed before the response finished · Ref 2b90d4e7'},
-  step3:   {title:'aiRA couldn’t respond', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Step lost its connection again · Ref 94e1a6c3'},
+  step3:   {title:'aiRA couldn’t finish this step', body:'Start a new chat and ask again.', retry:false, detail:'ToolError: Step failed again · Ref 94e1a6c3'},
+  trans2b: {title:'aiRA couldn’t get this result', body:'Try again in a few minutes.', retry:true, detail:'ConnectionError: Query stream interrupted · Ref 3e19a0c4'},
   cfg2:    {title:'aiRA couldn’t finish setting this up', body:'Try again in a few minutes.', retry:true, detail:'APIError: Configuration step failed with status 500 · Ref 3fa9c21e'},
   cfg3:    {title:'aiRA couldn’t finish setting this up', body:'Start a new chat and ask again.', retry:false, detail:'APIError: Configuration step failed again with status 500 · Ref 0b6de4a8'},
   trans:   {title:'aiRA couldn’t get this result', body:'Something interrupted the query. Try again.', retry:true, detail:'ConnectionError: Query stream interrupted · Ref 3e19a0c4'},
@@ -349,7 +350,7 @@ const E = {
   trans3:  {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Query stream interrupted 3 times · Ref d1f8b370'},
   determ:  {title:'aiRA couldn’t get this result', body:'Try rephrasing your question, or ask about different data.', retry:false, detail:'QueryError: Column not found in the data table · Ref 8d2f61b7'},
   sandbox2: {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'WorkspaceError: Query workspace failed again · Ref 7c3e0b58'},
-  sandbox: {title:'aiRA couldn’t get this result', body:'Try again, or break your question into smaller parts.', retry:true, detail:'WorkspaceError: Query workspace restarted 3 times · Ref c47b1e95'},
+  sandbox: {title:'aiRA couldn’t get this result', body:'Try again, or narrow the scope.', retry:true, detail:'WorkspaceError: Query workspace restarted 3 times · Ref c47b1e95'},
   secrets: {title:'aiRA couldn’t run this test', body:'Add this test’s API credentials to a context document, then run the tests again.', retry:false, detail:null},
 };
 
@@ -377,6 +378,9 @@ const SCEN = [
 ];
 SCEN.push({id:'S9', name:'Artifact preview: hiccup', covers:['Network or render hiccups while opening an artifact, about 34% of artifact load failures','Load artifact (45), Show file (295), View image (148), View PDF (68), View PPT (37), Load app (51)']});
 SCEN.push({id:'S10', name:'Artifact preview: broken file', covers:['Corrupted or malformed content and wrong text encoding, about 60% of artifact load failures','Reports, PDFs, dashboards and exports that fail to render']});
+SCEN.push({id:'S11', name:'Data query: result too large', covers:['A query or chart result is over the row or point limit','Not instrumented yet: needs its own size check before the result is drawn, and may fall into the transient or deterministic buckets today']});
+SCEN.push({id:'S12', name:'Answer generation: question too broad', covers:['The request goes over aiRA’s context limit, usually because the chat has grown long','Not instrumented yet: may be counted inside answer-generation errors today and wrongly offered Retry']});
+SCEN.push({id:'S13', name:'QA test run: too many test cases', covers:['A QA run asks for more test cases than one run allows','Not instrumented yet: a fixed product limit, so every request over it hits this the same way']});
 const OUTSIDE = ['FTP export failures (16): fired from a table’s export control, not a chat reply','Feature not enabled for the org (8): an entitlement gate, caught before aiRA tries'];
 
 const u = text => ({t:'user', text});
@@ -397,20 +401,15 @@ const STEPS = [
 
   {id:'S2.1', s:'S2', name:'Step loses its connection', kind:'step', apply(){ qaStart(); },
    notes:['The activity line changes in place to the red alert with Retry.','Waits about 2 seconds, then fails.']},
-  {id:'S2.2', s:'S2', name:'Failed: the line', kind:'step', apply(){ S.items=[u(QA), r({line:'stepErr', verb:'Fetching your test customers', errText:'Connection lost while fetching your test customers', okText:QA_OK})]; },
+  {id:'S2.2', s:'S2', name:'Failed: the line', kind:'step', apply(){ S.items=[u(QA), r({line:'stepErr', verb:'Fetching your test customers', errText:'Couldn’t finish this step', okText:QA_OK})]; },
    notes:['Retry runs the step again.','After two failed retries the line becomes the card, with Retry. If that fails too: “aiRA couldn’t respond”, no button.']},
   {id:'S2.3', s:'S2', name:'No customers match', kind:null, tbc:true, apply(){ S.items=[u(QA), r({text:'No customers match this test’s criteria, so the tests didn’t run. Change the customer list and run the tests again.', fb:true})]; },
    notes:['To be confirmed.','Not an error: an empty result. A plain reply, using the “nothing matched” pattern.']},
 
-  {id:'S3.1', s:'S3', name:'First failure', kind:'query', apply(){ S.items=[u(Q), r({err:E.trans})]; },
-   notes:['A connection blip during the query. Retry can work.']},
-  {id:'S3.2', s:'S3', name:'Retry works', kind:'query', apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; },
-   notes:['The answer takes the card’s place.']},
-  {id:'S3.3', s:'S3', name:'Second failure', kind:'query', apply(){ S.items=[u(Q), r({err:E.trans2, fb:true})]; },
-   notes:['A connection blip, so Retry stays.']},
-  {id:'S3.4', s:'S3', name:'Third failure: no Retry', kind:null, apply(){ S.items=[u(Q), r({err:E.trans3, fb:true})]; },
-   notes:['Retry has failed twice, so this card has no button.']},
-
+  {id:'S3.1', s:'S3', name:'First failure: the line', kind:'step', apply(){ S.items=[u(Q), r({line:'stepErr', verb:'Querying your data', errText:'Couldn’t get this result', okText:ANS12, e2:E.trans2b, e3:E.trans3})]; }, notes:[]},
+  {id:'S3.2', s:'S3', name:'Retry works', kind:'step', apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; }, notes:[]},
+  {id:'S3.3', s:'S3', name:'Second retry fails: the card', kind:'step', apply(){ S.items=[u(Q), r({line:null, err:E.trans2b, fb:true, fails:2, verb:'Querying your data', errText:'Couldn’t get this result', okText:ANS12, e2:E.trans2b, e3:E.trans3})]; }, notes:[]},
+  {id:'S3.4', s:'S3', name:'Card retry fails: no Retry', kind:null, apply(){ S.items=[u(Q), r({err:E.trans3, fb:true})]; }, notes:[]},
   {id:'S4.1', s:'S4', name:'The card, no Retry', kind:null, apply(){ S.items=[u(Q), r({err:E.determ, fb:true})]; },
    notes:['The same query would fail the same way, so there is no Retry.','The sentence points at the question, not the query.']},
   {id:'S4.2', s:'S4', name:'User asks differently', kind:null, apply(){ S.items=[u(Q), r({err:E.determ, fb:true})]; S.draft='Show weekend redemptions by tier for the last 3 months'; S.focusInput=true; },
@@ -433,10 +432,16 @@ const STEPS = [
   {id:'S9.2', s:'S9', name:'First failure', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err1'}; }, notes:[]},
   {id:'S9.3', s:'S9', name:'Retry works', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'ok'}; }, notes:[]},
   {id:'S9.4', s:'S9', name:'Second failure', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err2'}; }, notes:[]},
+  {id:'S9.5', s:'S9', name:'Third failure', kind:null, apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err3'}; }, notes:[]},
   {id:'S10.1', s:'S10', name:'Caught while building', kind:null, apply(){ buildStart(); }, notes:[]},
   {id:'S10.2', s:'S10', name:'Opens as normal', kind:null, apply(){ S.items=[u('Build a dashboard of weekend redemptions by tier'), r({line:'done', act:'Checked the dashboard'}), {t:'art', title:'Weekend redemptions by tier', sub:'v1'}, r({text:'Here’s your dashboard: weekend redemptions for Gold, Silver and Platinum over the last 12 weeks.', fb:true})]; S.panel={key:2, title:'Weekend redemptions by tier', state:'ok'}; }, notes:[]},
   {id:'S10.3', s:'S10', name:'Gets through', kind:null, apply(){ dash(); S.items[1].broken=true; }, notes:[]},
   {id:'S10.4', s:'S10', name:'Broken file: no Retry', kind:null, apply(){ dash(); S.items[1].broken=true; S.panel={key:1, title:'Weekend redemptions by tier', state:'broken'}; }, notes:[]},
+  {id:'S11.1', s:'S11', name:'The card, no Retry', kind:null, apply(){ S.items=[u(Q), r({err:{title:'aiRA couldn’t show this result', body:'Narrow the scope and ask again.', retry:false, detail:'ResultTooLarge: 428,000 rows exceeds the row limit · Ref 9a3c7e10'}, fb:true})]; }, notes:[]},
+  {id:'S11.2', s:'S11', name:'User narrows the scope', kind:null, apply(){ STEP('S11.1').apply(); S.draft='Show weekend redemptions by tier for the last 3 months'; S.focusInput=true; }, notes:[]},
+  {id:'S12.1', s:'S12', name:'The card, no Retry', kind:null, apply(){ S.items=[u(Q), r({err:{title:'aiRA couldn’t answer this', body:'Narrow the scope, or start a new chat.', retry:false, detail:'ContextLimitError: Request exceeded the context limit · Ref 2e8b5d71'}, fb:true})]; }, notes:[]},
+  {id:'S12.2', s:'S12', name:'User narrows the scope', kind:null, apply(){ STEP('S12.1').apply(); S.draft='Show weekend redemptions for Platinum only'; S.focusInput=true; }, notes:[]},
+  {id:'S13.1', s:'S13', name:'The card, no button', kind:null, apply(){ S.items=[u('Run 120 test cases for the Diwali weekend 2× points promotion'), r({err:{title:'aiRA can’t run this many test cases', body:'Ask for fewer test cases at a time.', retry:false, detail:null}, fb:true})]; }, notes:[]},
 
 ];
 const STEP = id => STEPS.find(s => s.id === id);
@@ -457,7 +462,7 @@ function go(id){
 function setStep(id){ S.step = id; if (location.hash !== '#'+id) history.replaceState(null, '', '#'+id); render(); }
 
 function qaStart(){
-  S.items=[u(QA), r({line:'stepWork', verb:'Fetching your test customers', errText:'Connection lost while fetching your test customers', okText:QA_OK})]; S.gen=true;
+  S.items=[u(QA), r({line:'stepWork', verb:'Fetching your test customers', errText:'Couldn’t finish this step', okText:QA_OK})]; S.gen=true;
   later(() => { const x=S.items[1]; x.line='stepErr'; S.gen=false; setStep('S2.2'); }, 2200);
 }
 function sandboxStart(){
@@ -514,11 +519,14 @@ function replyHTML(x, i){
 const ENTRIES = [
   {label:'Errors during answer generation', go:'S1.1', s:'S1'},
   {label:'Errors during answer generation: no text yet', go:'S1.2', s:'S1', only:['S1.2']},
+  {label:'Errors during answer generation: question too broad', go:'S12.1', s:'S12'},
   {label:'Errors during QA data fetch', go:'S2.1', s:'S2'},
   {label:'Errors during QA data fetch: no customers match', go:'S2.3', s:'S2', only:['S2.3']},
   {label:'Errors during a data query: transient', go:'S3.1', s:'S3'},
   {label:'Errors during a data query: deterministic', go:'S4.1', s:'S4'},
+  {label:'Errors during a data query: result too large', go:'S11.1', s:'S11'},
   {label:'Errors during a QA test run: missing auth', go:'S5.1', s:'S5'},
+  {label:'Errors during a QA test run: too many test cases', go:'S13.1', s:'S13'},
   {label:'Errors during sandbox runs', go:'S6.1', s:'S6'},
   {label:'Errors during configuration build', go:'S7.1', s:'S7'},
   {label:'Errors during artifact preview: hiccup', go:'S9.1', s:'S9'},
@@ -561,8 +569,10 @@ function panelHTML(p){
   let b = '';
   if (p.state === 'loading') b = `<div class="skel" aria-label="Loading"><span style="width:46%;height:22px"></span><span style="width:62%"></span><span style="width:92%"></span><span style="width:84%"></span><span style="width:40%"></span><span style="width:96%"></span><span style="width:88%"></span><span class="box"></span></div>`;
   if (p.state === 'err1') b = perr('circle-alert', 'This artifact couldn’t open', 'Try again in a moment.', `<button class="btn bs" data-pclose>Close</button><button class="btn bp" data-pretry>Retry</button>`, 'LoadError: Artifact could not be loaded · Ref c2d94a17');
-  if (p.state === 'err2') b = perr('circle-alert', 'This artifact still couldn’t open', 'Ask aiRA in the chat to create it again.',
-      `<button class="btn bs" data-pclose>Close</button>`, 'LoadError: Artifact could not be loaded · Ref e81b3f60');
+  if (p.state === 'err2') b = perr('circle-alert', 'This artifact still couldn’t open', 'Try again in a few minutes.',
+      `<button class="btn bs" data-pclose>Close</button><button class="btn bp" data-pretry>Retry</button>`, 'LoadError: Artifact could not be loaded · Ref e81b3f60');
+  if (p.state === 'err3') b = perr('circle-alert', 'This artifact couldn’t open', 'Ask aiRA in the chat to create it again.',
+      `<button class="btn bs" data-pclose>Close</button>`, 'LoadError: Artifact could not be loaded 3 times · Ref 6d1f9a42');
   if (p.state === 'broken') b = perr('circle-alert', 'This artifact couldn’t open', 'Ask aiRA in the chat to create it again.', `<button class="btn bs" data-pclose>Close</button>`, 'RenderError: File content could not be read · Ref 5e27c0a9');
   if (p.state === 'ok') b = `<div class="dash"><h3>Weekend redemptions by tier</h3><p class="cap">Last 12 weeks · Source: <code>${SRC}</code></p>
       <table class="dt"><thead><tr><th>Tier</th><th class="n">Weekend redemptions</th><th class="n">Share on weekends</th></tr></thead>
@@ -647,8 +657,8 @@ document.addEventListener('click', e => {
   if (d.pr === 'dd'){ S.dd = !S.dd; S.focusSel = S.dd ? '[data-entry][aria-selected="true"]' : '[data-pr="dd"]'; return render(); }
   if (d.entry !== undefined){ S.dd = false; go(ENTRIES[+d.entry].go); const b = document.querySelector('[data-pr="dd"]'); if (b) b.focus(); return; }
   if (d.retry !== undefined) return retry(+d.retry);
-  if (d.pretry !== undefined){ S.panel.state='loading'; S.open.panel=false; render();
-    later(() => { if (!S.panel) return; if (S.retry === 'works'){ S.panel.state='ok'; setStep('S9.3'); } else { S.panel.state='err2'; setStep('S9.4'); } }, 1800); return; }
+  if (d.pretry !== undefined){ const fromState = S.panel.state; S.panel.state='loading'; S.open.panel=false; render();
+    later(() => { if (!S.panel) return; if (S.retry === 'works'){ S.panel.state='ok'; setStep('S9.3'); } else if (fromState === 'err2'){ S.panel.state='err3'; setStep('S9.5'); } else { S.panel.state='err2'; setStep('S9.4'); } }, 1800); return; }
   if (d.pclose !== undefined){ timers.forEach(clearTimeout); timers=[]; S.panel=null; S.open.panel=false; S.focusSel='[data-card]'; return render(); }
   if (d.preport !== undefined){ S.modal=true; return render(); }
   if (d.mclose !== undefined){ S.modal=false; S.focusSel='[data-preport]'; return render(); }
