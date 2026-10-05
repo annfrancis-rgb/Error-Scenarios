@@ -401,14 +401,14 @@ const STEPS = [
 
   {id:'S2.1', s:'S2', name:'Step loses its connection', kind:'step', apply(){ qaStart(); },
    notes:['The activity line changes in place to the red alert with Retry.','Waits about 2 seconds, then fails.']},
-  {id:'S2.2', s:'S2', name:'Failed: the line', kind:'step', apply(){ S.items=[u(QA), r({line:'stepErr', verb:'Fetching your test customers', errText:'Couldn’t finish this step', okText:QA_OK})]; },
+  {id:'S2.2', s:'S2', name:'Failed: the line', kind:'step', apply(){ S.items=[u(QA), r({line:'stepErr', verb:'Fetching your test customers', errText:'aiRA couldn’t finish this step', okText:QA_OK})]; },
    notes:['Retry runs the step again.','After two failed retries the line becomes the card, with Retry. If that fails too: “aiRA couldn’t respond”, no button.']},
   {id:'S2.3', s:'S2', name:'No customers match', kind:null, tbc:true, apply(){ S.items=[u(QA), r({text:'No customers match this test’s criteria, so the tests didn’t run. Change the customer list and run the tests again.', fb:true})]; },
    notes:['To be confirmed.','Not an error: an empty result. A plain reply, using the “nothing matched” pattern.']},
 
-  {id:'S3.1', s:'S3', name:'First failure: the line', kind:'step', apply(){ S.items=[u(Q), r({line:'stepErr', verb:'Querying your data', errText:'Couldn’t get this result', okText:ANS12, e2:E.trans2b, e3:E.trans3})]; }, notes:[]},
+  {id:'S3.1', s:'S3', name:'First failure: the line', kind:'step', apply(){ S.items=[u(Q), r({line:'stepErr', verb:'Querying your data', errText:'aiRA couldn’t get this result', okText:ANS12, e2:E.trans2b, e3:E.trans3})]; }, notes:[]},
   {id:'S3.2', s:'S3', name:'Retry works', kind:'step', apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; }, notes:[]},
-  {id:'S3.3', s:'S3', name:'Second retry fails: the card', kind:'step', apply(){ S.items=[u(Q), r({line:null, err:E.trans2b, fb:true, fails:2, verb:'Querying your data', errText:'Couldn’t get this result', okText:ANS12, e2:E.trans2b, e3:E.trans3})]; }, notes:[]},
+  {id:'S3.3', s:'S3', name:'Second retry fails: the card', kind:'step', apply(){ S.items=[u(Q), r({line:null, err:E.trans2b, fb:true, fails:2, verb:'Querying your data', errText:'aiRA couldn’t get this result', okText:ANS12, e2:E.trans2b, e3:E.trans3})]; }, notes:[]},
   {id:'S3.4', s:'S3', name:'Card retry fails: no Retry', kind:null, apply(){ S.items=[u(Q), r({err:E.trans3, fb:true})]; }, notes:[]},
   {id:'S4.1', s:'S4', name:'The card, no Retry', kind:null, apply(){ S.items=[u(Q), r({err:E.determ, fb:true})]; },
    notes:['The same query would fail the same way, so there is no Retry.','The sentence points at the question, not the query.']},
@@ -426,7 +426,7 @@ const STEPS = [
    notes:['After the 3rd try the line becomes the card, with no Retry.']},
   {id:'S6.4', s:'S6', name:'Retry fails', kind:null, apply(){ S.items=[u(Q), r({err:E.sandbox2, fb:true})]; }, notes:[]},
 
-  {id:'S7.1', s:'S7', name:'Audience filter fails', kind:'step', apply(){ S.items=[u(CFG), r({line:'stepErr', verb:'Applying your audience filter', errText:'Couldn’t finish setting this up', okText:CFG_OK, e2:E.cfg2, e3:E.cfg3})]; },
+  {id:'S7.1', s:'S7', name:'Audience filter fails', kind:'step', apply(){ S.items=[u(CFG), r({line:'stepErr', verb:'Applying your audience filter', errText:'aiRA couldn’t finish setting this up', okText:CFG_OK, e2:E.cfg2, e3:E.cfg3})]; },
    notes:['A platform 500 while applying the filter: a passing step failure.','Compile failures never reach the user.']},
   {id:'S9.1', s:'S9', name:'Opening', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'loading'}; S.failOpen=true; openLater(); }, notes:[]},
   {id:'S9.2', s:'S9', name:'First failure', kind:'panel', apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err1'}; }, notes:[]},
@@ -462,7 +462,7 @@ function go(id){
 function setStep(id){ S.step = id; if (location.hash !== '#'+id) history.replaceState(null, '', '#'+id); render(); }
 
 function qaStart(){
-  S.items=[u(QA), r({line:'stepWork', verb:'Fetching your test customers', errText:'Couldn’t finish this step', okText:QA_OK})]; S.gen=true;
+  S.items=[u(QA), r({line:'stepWork', verb:'Fetching your test customers', errText:'aiRA couldn’t finish this step', okText:QA_OK})]; S.gen=true;
   later(() => { const x=S.items[1]; x.line='stepErr'; S.gen=false; setStep('S2.2'); }, 2200);
 }
 function sandboxStart(){
