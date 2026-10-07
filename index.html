@@ -255,7 +255,25 @@ table.dt{width:100%;border-collapse:collapse;border:1px solid var(--aira-border-
 .pr-dd-list button[aria-selected="true"]{color:#fff;font-weight:500}
 .pr-dd-list svg{width:14px;height:14px}
 .pr-lab{font-weight:500;color:#fff}
-.proto{width:380px;overflow:visible;max-height:none}
+.proto{width:288px;overflow:visible;max-height:none;left:auto;right:14px;bottom:14px}
+.proto .pr-top{padding:8px 8px 6px 10px}
+.proto .pr-b{padding:0 10px 10px;gap:8px}
+.proto .pr-card{padding:8px 10px;gap:4px}
+.proto .pr-cov{font-size:11.5px;line-height:15px;max-height:92px;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.3) transparent}
+.proto .pr-dd-btn{font-size:12px;line-height:16px;padding:6px 8px}
+.proto .pr-row{gap:6px}
+.hint{animation:hint 1.6s ease-out infinite}
+@keyframes hint{0%{box-shadow:0 0 0 0 rgba(59,130,246,.6)}100%{box-shadow:0 0 0 8px rgba(59,130,246,0)}}
+@media (prefers-reduced-motion:reduce){.hint{animation:none;box-shadow:0 0 0 2px rgba(59,130,246,.6)}}
+.cstrip{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 12px;margin-bottom:8px;border:1px solid var(--aira-border-default);border-radius:var(--aira-radius-md);background:var(--aira-bg-surface);font-size:13px;line-height:20px;color:var(--aira-text-primary)}
+.cstrip > svg{width:16px;height:16px;color:var(--aira-text-danger);flex:none}
+.cstrip span{flex:1}
+.cstrip .iconbtn{width:28px;height:28px}
+.cstrip .iconbtn svg{width:14px;height:14px}
+.composer.off{border-color:var(--aira-border-default);background:var(--aira-bg-muted)}
+.composer.off input{color:var(--aira-text-tertiary);cursor:not-allowed}
+.composer.off .cicon{color:var(--aira-text-placeholder)}
+.composer.off .send{cursor:not-allowed}
 </style>
 </head>
 <body>
@@ -292,6 +310,7 @@ table.dt{width:100%;border-collapse:collapse;border:1px solid var(--aira-border-
       <section class="chat" aria-label="Chat">
         <div class="thread" id="thread"><div class="col" id="threadCol" aria-live="polite"></div></div>
         <div class="dock"><div class="col">
+          <div id="strip"></div>
           <form class="composer" id="composer" autocomplete="off">
             <span class="cicon" aria-hidden="true"><i data-lucide="plus"></i></span>
             <input id="input" aria-label="Message aiRA" placeholder="What’s our mission today?">
@@ -345,6 +364,12 @@ const E = {
   trans2b: {title:'aiRA couldn’t get this result', body:'Try again in a few minutes.', retry:true, detail:'ConnectionError: Query stream interrupted · Ref 3e19a0c4'},
   cfg2:    {title:'aiRA couldn’t finish setting this up', body:'Try again in a few minutes.', retry:true, detail:'APIError: Configuration step failed with status 500 · Ref 3fa9c21e'},
   cfg3:    {title:'aiRA couldn’t finish setting this up', body:'Start a new chat and ask again.', retry:false, detail:'APIError: Configuration step failed again with status 500 · Ref 0b6de4a8'},
+  offw:    {title:'aiRA lost the connection', body:'Waiting for your connection', retry:false, detail:'NetworkError: Connection to aiRA lost · Ref 4c2e9b17'},
+  off2:    {title:'aiRA lost the connection', body:'Check your internet connection and try again.', retry:true, detail:'NetworkError: Connection to aiRA lost · Ref 4c2e9b17'},
+  tout:    {title:'aiRA couldn’t get this result', body:'Try again, or narrow the scope.', retry:true, detail:'TimeoutError: Query exceeded the time limit after 120s · Ref 4b81e0d2'},
+  tout2:   {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'TimeoutError: Query exceeded the time limit again · Ref 7e05c3d9'},
+  busy2:   {title:'aiRA is busy right now', body:'Try again in a few minutes.', retry:true, detail:'OverloadedError: Model capacity reached · Ref a1d47f02'},
+  busy3:   {title:'aiRA is busy right now', body:'Start a new chat and ask again.', retry:false, detail:'OverloadedError: Model capacity reached again · Ref 58c3e6b1'},
   trans:   {title:'aiRA couldn’t get this result', body:'Something interrupted the query. Try again.', retry:true, detail:'ConnectionError: Query stream interrupted · Ref 3e19a0c4'},
   trans2:  {title:'aiRA still couldn’t get this result', body:'Try again in a few minutes.', retry:true, detail:'ConnectionError: Query stream interrupted again · Ref 6a04d9f2'},
   trans3:  {title:'aiRA couldn’t get this result', body:'Start a new chat and ask again.', retry:false, detail:'ConnectionError: Query stream interrupted 3 times · Ref d1f8b370'},
@@ -357,7 +382,7 @@ const E = {
 /* ---------- scenarios and steps ---------- */
 const SCEN = [
   {id:'S1', name:'Answer generation', share:'18.2% of all errors · 5,627 events', pattern:'Line, then the card after two failed retries',
-   covers:['Model call failing in “Error in tell”: InferenceError, APIError, BadRequestError, ServerDisconnectedError','Tool calls mid-response (ToolError): load_document_range, discover_document_names, grep_document, read_file, edit_file, load_playbook'],
+   covers:['Model call failing in “Error in tell”: InferenceError, APIError, BadRequestError, ServerDisconnectedError','Tool calls mid-response (ToolError): load_document_range, discover_document_names, grep_document, read_file, edit_file, load_playbook','Model request failed (646) and Model error (73)','Network request failed (17)','Live connection closed (12): the answer stalls, so aiRA shows “Reconnecting” and tries once on its own first'],
    note:'Tool names are never shown in the line or the card.'},
   {id:'S2', name:'QA data-fetch step', share:'2.4% of all errors · 751 events', pattern:'Line, activity form',
    covers:['fetch_customer_additional_details, fetch_customers_for_testing (491)','main_function: Failed to fetch customer data (114)','No available customers found to run test cases (13): an empty result, not a failure']},
@@ -381,6 +406,11 @@ SCEN.push({id:'S10', name:'Artifact preview: broken file', covers:['Corrupted or
 SCEN.push({id:'S11', name:'Data query: result too large', covers:['A query or chart result is over the row or point limit','Not instrumented yet: needs its own size check before the result is drawn, and may fall into the transient or deterministic buckets today']});
 SCEN.push({id:'S12', name:'Answer generation: question too broad', covers:['The request goes over aiRA’s context limit, usually because the chat has grown long','Not instrumented yet: may be counted inside answer-generation errors today and wrongly offered Retry']});
 SCEN.push({id:'S13', name:'QA test run: too many test cases', covers:['A QA run asks for more test cases than one run allows','Not instrumented yet: a fixed product limit, so every request over it hits this the same way']});
+SCEN.push({id:'S14', name:'Answer generation: internet connection lost', covers:['The user’s own internet connection drops while aiRA is answering','Not in the server error log: the request never reaches aiRA']});
+SCEN.push({id:'S15', name:'Answer generation: aiRA busy', covers:['Model overloaded (44, 52% gave up): capacity limits at busy times']});
+SCEN.push({id:'S16', name:'Data query: timed out', covers:['Query timed out (654, 76% gave up): the query ran past the time limit and was stopped']});
+SCEN.push({id:'S17', name:'Sending while offline', covers:['The user presses Send with no internet connection','Not in the server error log: the message never leaves the browser']});
+SCEN.push({id:'S18', name:'Session expired', covers:['The sign-in session expires while the user is working','Not in the server error log: sign-in is checked before aiRA runs']});
 const OUTSIDE = ['FTP export failures (16): fired from a table’s export control, not a chat reply','Feature not enabled for the org (8): an entitlement gate, caught before aiRA tries'];
 
 const u = text => ({t:'user', text});
@@ -435,13 +465,19 @@ const STEPS = [
   {id:'S9.5', s:'S9', name:'Third failure', kind:null, apply(){ dash(); S.panel={key:1, title:'Weekend redemptions by tier', state:'err3'}; }, notes:[]},
   {id:'S10.1', s:'S10', name:'Caught while building', kind:null, apply(){ buildStart(); }, notes:[]},
   {id:'S10.2', s:'S10', name:'Opens as normal', kind:null, apply(){ S.items=[u('Build a dashboard of weekend redemptions by tier'), r({line:'done', act:'Checked the dashboard'}), {t:'art', title:'Weekend redemptions by tier', sub:'v1'}, r({text:'Here’s your dashboard: weekend redemptions for Gold, Silver and Platinum over the last 12 weeks.', fb:true})]; S.panel={key:2, title:'Weekend redemptions by tier', state:'ok'}; }, notes:[]},
-  {id:'S10.3', s:'S10', name:'Gets through', kind:null, apply(){ dash(); S.items[1].broken=true; }, notes:[]},
+  {id:'S10.3', s:'S10', name:'Gets through', kind:null, apply(){ dash(); S.items[1].broken=true; S.panel={key:1, title:'Weekend redemptions by tier', state:'loading'}; later(() => { if (!S.panel) return; S.panel.state='broken'; setStep('S10.4'); }, 1400); }, notes:[]},
   {id:'S10.4', s:'S10', name:'Broken file: no Retry', kind:null, apply(){ dash(); S.items[1].broken=true; S.panel={key:1, title:'Weekend redemptions by tier', state:'broken'}; }, notes:[]},
   {id:'S11.1', s:'S11', name:'The card, no Retry', kind:null, apply(){ S.items=[u(Q), r({err:{title:'aiRA couldn’t show this result', body:'Narrow the scope and ask again.', retry:false, detail:'ResultTooLarge: 428,000 rows exceeds the row limit · Ref 9a3c7e10'}, fb:true})]; }, notes:[]},
   {id:'S11.2', s:'S11', name:'User narrows the scope', kind:null, apply(){ STEP('S11.1').apply(); S.draft='Show weekend redemptions by tier for the last 3 months'; S.focusInput=true; }, notes:[]},
   {id:'S12.1', s:'S12', name:'The card, no Retry', kind:null, apply(){ S.items=[u(Q), r({err:{title:'aiRA couldn’t answer this', body:'Narrow the scope, or start a new chat.', retry:false, detail:'ContextLimitError: Request exceeded the context limit · Ref 2e8b5d71'}, fb:true})]; }, notes:[]},
   {id:'S12.2', s:'S12', name:'User narrows the scope', kind:null, apply(){ STEP('S12.1').apply(); S.draft='Show weekend redemptions for Platinum only'; S.focusInput=true; }, notes:[]},
   {id:'S13.1', s:'S13', name:'The card, no button', kind:null, apply(){ S.items=[u('Run 120 test cases for the Diwali weekend 2× points promotion'), r({err:{title:'aiRA can’t run this many test cases', body:'Ask for fewer test cases at a time.', retry:false, detail:null}, fb:true})]; }, notes:[]},
+  {id:'S1.0', s:'S1', name:'Reconnecting', kind:'stream', apply(){ S.items=[u(Q), r({text:PART, line:'reconnect'})]; S.gen=true; later(() => { const x=S.items[1]; x.line='int'; x.fb=true; S.gen=false; setStep('S1.1'); }, 2600); }, notes:[]},
+  {id:'S14.1', s:'S14', name:'Connection drops', kind:'offline', apply(){ S.items=[u(Q), r({text:PART, line:'working'})]; S.gen=true; later(() => { const x=S.items[1]; x.line=null; x.err=E.off2; x.fb=true; x.off=true; S.gen=false; S.offline=true; render(); }, 1600); }, notes:[]},
+  {id:'S15.1', s:'S15', name:'aiRA is busy', kind:'step', apply(){ S.items=[u(Q), r({line:'stepErr', verb:'Answering', errText:'aiRA is busy right now', okText:FULL, e2:E.busy2, e3:E.busy3})]; }, notes:[]},
+  {id:'S16.1', s:'S16', name:'Taking longer, then the card', kind:'tout', apply(){ S.items=[u(Q), r({line:'slow'})]; S.gen=true; later(() => { const x=S.items[1]; x.line=null; x.err=E.tout; x.fb=true; S.gen=false; render(); }, 2600); }, notes:[]},
+  {id:'S17.1', s:'S17', name:'Send while offline', kind:null, apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; S.offline=true; S.strip=true; S.draft='Show weekend redemptions for Platinum only'; }, notes:[]},
+  {id:'S18.1', s:'S18', name:'Signed out', kind:null, apply(){ S.items=[u(Q), r({text:ANS12, src:true, fb:true})]; S.expired='modal'; S.draft='Show weekend redemptions for Platinum only'; }, notes:[]},
 
 ];
 const STEP = id => STEPS.find(s => s.id === id);
@@ -449,7 +485,7 @@ const STEP = id => STEPS.find(s => s.id === id);
 /* ---------- state ---------- */
 let S, timers = [];
 const later = (fn, ms) => { const t = setTimeout(fn, ms); timers.push(t); return t; };
-function fresh(){ return {step:'S1.1', items:[], gen:false, draft:'', focusInput:false, retry:'fails', min:false, open:{}, covers:true, dd:false, panel:null, modal:false, failOpen:false}; }
+function fresh(){ return {step:'S1.1', items:[], gen:false, draft:'', focusInput:false, retry:'fails', min:false, open:{}, covers:true, dd:false, panel:null, modal:false, failOpen:false, offline:false, expired:false, strip:false}; }
 function go(id){
   const st = STEP(id) || STEPS[0];
   timers.forEach(clearTimeout); timers = [];
@@ -502,6 +538,9 @@ function replyHTML(x, i){
   if (x.line === 'querying') h += `<div class="act" role="status">${spark()}<span>Querying your data</span></div>`;
   if (x.line === 'stepWork') h += `<div class="act" role="status">${spark()}<span>${esc(x.verb)}</span></div>`;
   if (x.line === 'stepErr') h += `<div class="act" role="status"><i data-lucide="circle-alert" style="color:var(--aira-text-danger);width:16px;height:16px"></i><span>${esc(x.errText)} · <button class="tb" style="font-size:14px" data-retry="${i}">Retry</button></span></div>`;
+  if (x.line === 'reconnect') h += `<div class="act" role="status">${spark()}<span>Reconnecting</span></div>`;
+  if (x.line === 'slow') h += `<div class="act" role="status">${spark()}<span>Still querying, taking longer than usual</span></div>`;
+  if (x.line === 'wait') h += `<p class="sys" role="status">Waiting for your connection</p>`;
   if (x.line === 'int') h += `<p class="sys" role="status">aiRA’s response was interrupted · <button class="tb" data-retry="${i}">Retry</button></p>`;
   if (x.err){
     const open = !!S.open[i];
@@ -517,7 +556,12 @@ function replyHTML(x, i){
   return h + `</div>`;
 }
 const ENTRIES = [
-  {label:'Errors during answer generation', go:'S1.1', s:'S1'},
+  {label:'Errors during answer generation: internet connection lost', go:'S14.1', s:'S14'},
+  {label:'Errors when sending: offline', go:'S17.1', s:'S17'},
+  {label:'Errors during a long session: session expired', go:'S18.1', s:'S18'},
+  {label:'Errors during a data query: timed out', go:'S16.1', s:'S16'},
+  {label:'Errors during answer generation: aiRA busy', go:'S15.1', s:'S15'},
+  {label:'Errors during answer generation', go:'S1.0', s:'S1'},
   {label:'Errors during answer generation: no text yet', go:'S1.2', s:'S1', only:['S1.2']},
   {label:'Errors during answer generation: question too broad', go:'S12.1', s:'S12'},
   {label:'Errors during QA data fetch', go:'S2.1', s:'S2'},
@@ -540,7 +584,7 @@ function entryOf(stepId){
 function protoHTML(){
   const st = STEP(S.step), sc = SCEN.find(x => x.id === st.s), en = entryOf(S.step);
   if (S.min) return `<div class="pr-h"><b>${esc(en.label)}</b><button class="pr-ib" data-pr="expand" aria-label="Show controls"><i data-lucide="chevron-up"></i></button></div>`;
-  const hasRetry = ['stream','step','query','sandbox','panel'].includes(st.kind);
+  const hasRetry = ['stream','step','query','sandbox','panel','offline','tout'].includes(st.kind);
   const list = S.dd ? `<ul class="pr-dd-list" role="listbox" aria-label="Scenario">${ENTRIES.map((e,k) => `<li><button role="option" data-entry="${k}" aria-selected="${e===en}">${esc(e.label)}${e===en ? '<i data-lucide="check"></i>' : ''}</button></li>`).join('')}</ul>` : '';
   return `<div class="pr-top"><div class="pr-dd"><button class="pr-dd-btn" data-pr="dd" aria-haspopup="listbox" aria-expanded="${!!S.dd}"><span>${esc(en.label)}</span><i data-lucide="chevron-down"></i></button>${list}</div><button class="pr-ib" data-pr="min" aria-label="Hide controls"><i data-lucide="minus"></i></button></div>
   <div class="pr-b">
@@ -592,15 +636,21 @@ function render(){
   send.setAttribute('aria-label', S.gen ? 'Stop' : 'Send');
   send.innerHTML = S.gen ? '<i data-lucide="circle-stop"></i>' : '<i data-lucide="arrow-up"></i>';
   if (S.draft){ input.value = S.draft; S.draft = ''; }
-  send.classList.toggle('ready', !S.gen && !!input.value.trim());
-  $('#modal').innerHTML = S.modal ? `<div class="scrim" data-scrim><div class="rmod" role="dialog" aria-modal="true" aria-labelledby="rmt">
+  const off = !!S.strip; $('#composer').classList.toggle('off', off); input.disabled = off; send.disabled = off;
+  send.classList.toggle('ready', !off && !S.gen && !!input.value.trim());
+  $('#strip').innerHTML = S.strip ? `<div class="cstrip" role="status"><i data-lucide="circle-alert"></i><span>You’re offline. Send again when you reconnect.</span><button class="iconbtn" aria-label="Close" data-stripx><i data-lucide="x"></i></button></div>` : '';
+  if (S.expired === 'modal'){ $('#modal').innerHTML = `<div class="scrim"><div class="rmod" role="dialog" aria-modal="true" aria-labelledby="sot"><div class="rmh"><h3 id="sot">Your session has expired</h3></div><div class="rmb"><p>Sign in again to continue with this chat session.</p></div><div class="rmf"><button class="btn bp" data-signin>Sign in</button></div></div></div>`; }
+  else $('#modal').innerHTML = S.modal ? `<div class="scrim" data-scrim><div class="rmod" role="dialog" aria-modal="true" aria-labelledby="rmt">
       <div class="rmh"><h3 id="rmt">Report this problem</h3><button class="iconbtn" aria-label="Close" data-mclose><i data-lucide="x"></i></button></div>
       <div class="rmb"><p>The details of what went wrong are sent with your report.</p><textarea id="rnote" aria-label="Note (optional)" placeholder="What were you trying to do? (optional)"></textarea></div>
       <div class="rmf"><button class="btn bs" data-mclose>Cancel</button><button class="btn bp" data-msend>Send report</button></div></div></div>` : '';
   $('#proto').className = 'proto' + (S.min ? ' min' : '');
   $('#proto').innerHTML = protoHTML();
   icons();
-  if (S.modal){ const t = $('#rnote'); if (t) t.focus(); }
+  document.querySelectorAll('[data-retry],[data-pretry],[data-signin]').forEach(b => b.classList.add('hint'));
+  if (!S.panel) document.querySelectorAll('[data-card]').forEach(b => b.classList.add('hint'));
+  if (S.expired === 'modal'){ const b = document.querySelector('[data-signin]'); if (b) b.focus(); }
+  else if (S.modal){ const t = $('#rnote'); if (t) t.focus(); }
   else if (S.focusInput){ S.focusInput = false; input.focus(); input.setSelectionRange(input.value.length, input.value.length); }
   else if (S.focusSel){ const el = document.querySelector(S.focusSel); S.focusSel = null; if (el) el.focus({preventScroll:true}); }
 }
@@ -609,6 +659,14 @@ function render(){
 function retry(i){
   const x = S.items[i], st = STEP(S.step);
   S.focusSel = `[data-reply="${i}"]`;
+  if (x.off){
+    x.err=E.offw; render();
+    later(() => {
+      if (S.retry === 'works'){ S.offline=false; x.err=null; x.line='working'; x.text=''; x.fb=false; S.gen=true; render();
+        later(() => { S.gen=false; x.line=null; x.text=FULL; x.src=true; x.fb=true; x.off=false; render(); }, 1400); return; }
+      x.err=E.off2; render(); }, 2400);
+    return;
+  }
   if (x.line === 'int' || (x.err === E.stream2)){
     const hadText = !!x.text || x.hadText;
     x.hadText = hadText; x.text=''; x.line='working'; x.err=null; x.fb=false; S.gen=true; render();
@@ -635,6 +693,7 @@ function retry(i){
     const was = x.err;
     x.err=null; x.line='querying'; S.gen=true; render();
     later(() => { S.gen=false; x.line=null; x.fb=true;
+      if (was === E.tout){ if (S.retry === 'works'){ x.text=ANS12; x.src=true; } else { x.err=E.tout2; } render(); return; }
       if (was === E.sandbox){ if (S.retry === 'works'){ x.text=ANS12; x.src=true; setStep('S6.2'); } else { x.err=E.sandbox2; setStep('S6.4'); } return; }
       if (S.retry === 'works'){ x.text=ANS12; x.src=true; setStep('S3.2'); }
       else if (was === E.trans2){ x.err=E.trans3; setStep('S3.4'); }
@@ -657,6 +716,8 @@ document.addEventListener('click', e => {
   if (d.pr === 'dd'){ S.dd = !S.dd; S.focusSel = S.dd ? '[data-entry][aria-selected="true"]' : '[data-pr="dd"]'; return render(); }
   if (d.entry !== undefined){ S.dd = false; go(ENTRIES[+d.entry].go); const b = document.querySelector('[data-pr="dd"]'); if (b) b.focus(); return; }
   if (d.retry !== undefined) return retry(+d.retry);
+  if (d.stripx !== undefined){ S.strip=false; S.focusSel='#input'; return render(); }
+  if (d.signin !== undefined){ S.expired=false; S.focusInput=true; return render(); }
   if (d.pretry !== undefined){ const fromState = S.panel.state; S.panel.state='loading'; S.open.panel=false; render();
     later(() => { if (!S.panel) return; if (S.retry === 'works'){ S.panel.state='ok'; setStep('S9.3'); } else if (fromState === 'err2'){ S.panel.state='err3'; setStep('S9.5'); } else { S.panel.state='err2'; setStep('S9.4'); } }, 1800); return; }
   if (d.pclose !== undefined){ timers.forEach(clearTimeout); timers=[]; S.panel=null; S.open.panel=false; S.focusSel='[data-card]'; return render(); }
@@ -692,6 +753,8 @@ $('#composer').addEventListener('submit', e => {
     return render();
   }
   const text = input.value.trim(); if (!text) return;
+  if (S.expired){ S.expired='modal'; return render(); }
+  if (S.offline){ S.strip=true; render(); return; }
   input.value = ''; S.items.push(u(text));
   if (STEP(S.step).s === 'S10'){
     S.panel = null;
